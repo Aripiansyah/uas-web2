@@ -1,0 +1,592 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, Search, Calendar, Clock, MapPin, User, 
+  Filter, Trash2, Edit3, Loader2, X, CheckCircle, 
+  BookOpen, Layers, Monitor, SlidersHorizontal, Info, AlertCircle
+} from 'lucide-react';
+import { scheduleService } from '../services/firebase'; // Pastikan service ini sudah Anda buat/sesuaikan
+
+// Konfigurasi Pilihan Dosen Tetap agar Sinkron dengan Page Lain
+const DOSEN_LIST = [
+  "Dr. Andi Saputra",
+  "Budi Rahman, M.Kom",
+  "Siti Nurhaliza, S.T., M.T.",
+  "Ahmad Fauzi, M.Kom"
+];
+
+// Konfigurasi Pilihan Mata Kuliah & SKS bawaan
+const MATKUL_DATA = [
+  { name: "Pemrograman Mobile 2", sks: 3, color: "from-blue-600 to-cyan-600" },
+  { name: "Rekayasa Perangkat Lunak", sks: 3, color: "from-indigo-600 to-purple-600" },
+  { name: "Basis Data Lanjut", sks: 3, color: "from-amber-500 to-orange-600" },
+  { name: "Analisis Algoritma", sks: 2, color: "from-rose-500 to-pink-600" },
+  { name: "Kecerdasan Buatan", sks: 3, color: "from-emerald-500 to-teal-600" }
+];
+
+const HARI_LIST = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+export default function Schedules() {
+  // --- STATE MANAGEMENT ---
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Form States
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentId, setCurrentId] = useState(null);
+  const [matkul, setMatkul] = useState('');
+  const [lecturer, setLecturer] = useState('');
+  const [hari, setHari] = useState('Senin');
+  const [jamMulai, setJamMulai] = useState('');
+  const [jamSelesai, setJamSelesai] = useState('');
+  const [ruangan, setRuangan] = useState('');
+  const [jenisKelas, setJenisKelas] = useState('Offline');
+
+  // UI Filter & Search States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterHari, setFilterHari] = useState('All');
+  const [filterMatkul, setFilterMatkul] = useState('All');
+  const [selectedDayTab, setSelectedDayTab] = useState('All'); // Planner Tab
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  // Get Today's Date String for Header
+  const todayFormatted = new Date().toLocaleDateString('id-ID', { 
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+  });
+
+  // --- REALTIME DATA SYNC ---
+  useEffect(() => {
+    setLoading(true);
+    // Menggunakan fallback jika scheduleService belum di-setup penuh di firebase.js Anda
+    if (scheduleService && scheduleService.subscribeSchedules) {
+      const unsubscribe = scheduleService.subscribeSchedules((fetched) => {
+        setSchedules(fetched);
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
+      // Data Mock-up Premium jika Firebase service Schedules belum di-deploy
+      setTimeout(() => {
+        setSchedules([
+          { id: '1', matkul: 'Pemrograman Mobile 2', lecturer: 'Budi Rahman, M.Kom', hari: 'Senin', jamMulai: '08:00', jamSelesai: '10:30', ruangan: 'Lab Komputer 3', jenisKelas: 'Offline', sks: 3 },
+          { id: '2', matkul: 'Rekayasa Perangkat Lunak', lecturer: 'Siti Nurhaliza, S.T., M.T.', hari: 'Selasa', jamMulai: '13:00', jamSelesai: '15:30', ruangan: 'Ruang Teori 2.4', jenisKelas: 'Offline', sks: 3 },
+          { id: '3', matkul: 'Kecerdasan Buatan', lecturer: 'Dr. Andi Saputra', hari: 'Kamis', jamMulai: '10:00', jamSelesai: '12:00', ruangan: 'Zoom Cloud Meeting', jenisKelas: 'Online', sks: 3 },
+        ]);
+        setLoading(false);
+      }, 8000);
+    }
+  }, []);
+
+  // --- TOAST HELPER ---
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 4000);
+  };
+
+  // --- STATISTIK KALKULATOR ---
+  const totalMatkul = schedules.length;
+  const totalSKS = schedules.reduce((acc, curr) => acc + (Number(curr.sks) || 3), 0);
+  const kelasOnlineCount = schedules.filter(s => s.jenisKelas === 'Online').length;
+  
+  const currentDayName = new Date().toLocaleDateString('id-ID', { weekday: 'long' });
+  const jadwalHariIniCount = schedules.filter(s => s.hari?.toLowerCase() === currentDayName?.toLowerCase()).length;
+
+  // --- CRUD HANDLERS ---
+  const openAddModal = () => {
+    setIsEditing(false);
+    setCurrentId(null);
+    setMatkul('');
+    setLecturer('');
+    setHari('Senin');
+    setJamMulai('');
+    setJamSelesai('');
+    setRuangan('');
+    setJenisKelas('Offline');
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (sch) => {
+    setIsEditing(true);
+    setCurrentId(sch.id);
+    setMatkul(sch.matkul || '');
+    setLecturer(sch.lecturer || '');
+    setHari(sch.hari || 'Senin');
+    setJamMulai(sch.jamMulai || '');
+    setJamSelesai(sch.jamSelesai || '');
+    setRuangan(sch.ruangan || '');
+    setJenisKelas(sch.jenisKelas || 'Offline');
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!matkul || !lecturer || !jamMulai || !jamSelesai || !ruangan) {
+      showToast('Mohon lengkapi parameter jadwal kuliah wajib!', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    const selectedMatkulObj = MATKUL_DATA.find(m => m.name === matkul);
+    const targetSks = selectedMatkulObj ? selectedMatkulObj.sks : 3;
+
+    const scheduleData = {
+      matkul,
+      lecturer,
+      hari,
+      jamMulai,
+      jamSelesai,
+      ruangan,
+      jenisKelas,
+      sks: targetSks,
+      updatedAt: new Date()
+    };
+
+    try {
+      if (isEditing) {
+        if (scheduleService?.updateSchedule) await scheduleService.updateSchedule(currentId, scheduleData);
+        showToast('Jadwal perkuliahan berhasil diperbarui!');
+      } else {
+        if (scheduleService?.addSchedule) await scheduleService.addSchedule({ ...scheduleData, createdAt: new Date() });
+        showToast('Jadwal baru berhasil dipublikasikan ke kalender planner!');
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      showToast('Gagal memproses data jadwal.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm('Apakah Anda yakin ingin menghapus jadwal kuliah ini dari planner?')) {
+      try {
+        if (scheduleService?.deleteSchedule) await scheduleService.deleteSchedule(id);
+        showToast('Jadwal berhasil dihapus permanen.', 'success');
+      } catch (error) {
+        showToast('Gagal menghapus jadwal.', 'error');
+      }
+    }
+  };
+
+  // --- FILTER & SEARCH PROCESSING ---
+  const filteredSchedules = schedules.filter(sch => {
+    const matchesSearch = sch.matkul?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          sch.lecturer?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesHariSelect = filterHari === 'All' || sch.hari === filterHari;
+    const matchesMatkulSelect = filterMatkul === 'All' || sch.matkul === filterMatkul;
+    
+    // Sinkronisasi dengan Tab Filter Horizontal Mingguan
+    const matchesTabHari = selectedDayTab === 'All' || sch.hari === selectedDayTab;
+
+    return matchesSearch && matchesHariSelect && matchesMatkulSelect && matchesTabHari;
+  });
+
+  // Helper badge waktu (Pagi/Siang/Malam)
+  const getWaktuBadge = (jamStr) => {
+    if (!jamStr) return 'Pagi';
+    const hour = parseInt(jamStr.split(':')[0]);
+    if (hour < 11) return 'Pagi';
+    if (hour < 16) return 'Siang';
+    return 'Malam';
+  };
+
+  return (
+    <div className="w-full space-y-8 pb-16">
+      
+      {/* Toast Notification Premium */}
+      {toast.show && (
+        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border ${
+          toast.type === 'success' ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800' : 'bg-rose-50/95 border-rose-200 text-rose-800'
+        }`}>
+          <CheckCircle size={18} className={toast.type === 'success' ? 'text-emerald-600' : 'text-rose-600'} />
+          <span className="text-xs font-bold tracking-wide">{toast.message}</span>
+        </div>
+      )}
+
+      {/* --- PREMIUM COMPREHENSIVE HEADER --- */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-100 pb-6">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+              <Calendar size={22} />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight md:text-3xl">Jadwal Perkuliahan</h1>
+          </div>
+          <p className="text-xs text-slate-400 mt-1 font-medium">Manajemen waktu kelas, alokasi ruangan, sinkronisasi SKS, dan agenda mingguan terintegrasi.</p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2.5 text-right flex flex-col justify-center">
+            <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Kalender Hari Ini</span>
+            <span className="text-xs font-bold text-slate-700 mt-0.5">{todayFormatted}</span>
+          </div>
+          <button
+            onClick={openAddModal}
+            className="px-5 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 flex items-center justify-center gap-2 active:scale-98 transition-all"
+          >
+            <Plus size={16} />
+            Tambah Jadwal Baru
+          </button>
+        </div>
+      </div>
+
+      {/* --- METRIC STATS GRID CARDS --- */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stat 1 */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Layers size={20} /></div>
+          <div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Total Matkul</div>
+            <div className="text-xl font-black text-slate-800 mt-0.5">{totalMatkul} <span className="text-xs font-medium text-slate-400">Kelas</span></div>
+          </div>
+        </div>
+        {/* Stat 2 */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><BookOpen size={20} /></div>
+          <div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Akumulasi SKS</div>
+            <div className="text-xl font-black text-slate-800 mt-0.5">{totalSKS} <span className="text-xs font-medium text-slate-400">Bobot</span></div>
+          </div>
+        </div>
+        {/* Stat 3 */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
+          <div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Jadwal Hari Ini</div>
+            <div className="text-xl font-black text-slate-800 mt-0.5">{jadwalHariIniCount} <span className="text-xs font-medium text-slate-400">Matkul</span></div>
+          </div>
+        </div>
+        {/* Stat 4 */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><Monitor size={20} /></div>
+          <div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Kelas Online</div>
+            <div className="text-xl font-black text-slate-800 mt-0.5">{kelasOnlineCount} <span className="text-xs font-medium text-slate-400">Vicon</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- WEEKLY HORIZONTAL CALENDAR PLANNER ROW --- */}
+      <div className="bg-slate-900 text-white p-2.5 rounded-2xl flex flex-wrap gap-1 shadow-md">
+        <button
+          onClick={() => setSelectedDayTab('All')}
+          className={`flex-1 min-w-[70px] text-center py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+            selectedDayTab === 'All' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Semua Hari
+        </button>
+        {HARI_LIST.map((day) => {
+          const isToday = day.toLowerCase() === currentDayName.toLowerCase();
+          return (
+            <button
+              key={day}
+              onClick={() => setSelectedDayTab(day)}
+              className={`flex-1 min-w-[70px] text-center py-2 px-3 rounded-xl text-xs font-bold transition-all relative ${
+                selectedDayTab === day 
+                  ? 'bg-indigo-600 text-white shadow-md' 
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {day}
+              {isToday && <span className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-emerald-400 rounded-full" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* --- ADVANCED FILTER BAR CONTROLS --- */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
+        <div className="relative w-full md:flex-1">
+          <Search className="absolute left-3.5 top-3 text-slate-400" size={16} />
+          <input
+            type="text"
+            placeholder="Cari jadwal berdasarkan nama dosen atau nama mata kuliah..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
+          <div className="flex items-center gap-1 text-slate-400 text-xs font-bold bg-slate-50 p-2 rounded-xl flex-shrink-0">
+            <SlidersHorizontal size={13} />
+            <span>Filter:</span>
+          </div>
+          <select
+            value={filterHari}
+            onChange={(e) => setFilterHari(e.target.value)}
+            className="px-3 py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-[11px] font-bold text-slate-600 focus:outline-none"
+          >
+            <option value="All">Pilih Hari</option>
+            {HARI_LIST.map(h => <option key={h} value={h}>{h}</option>)}
+          </select>
+          <select
+            value={filterMatkul}
+            onChange={(e) => setFilterMatkul(e.target.value)}
+            className="px-3 py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-[11px] font-bold text-slate-600 focus:outline-none max-w-[160px] truncate"
+          >
+            <option value="All">Semua Matkul</option>
+            {MATKUL_DATA.map((m, idx) => <option key={idx} value={m.name}>{m.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* --- ACADEMIC GRID CARD INTERACTIVE SCHEDULER LAYOUT --- */}
+      {loading ? (
+        <div className="w-full flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
+          <Loader2 size={36} className="animate-spin text-indigo-500" />
+          <p className="text-xs font-bold">Sinkronisasi Basis Data Kalender Akademik...</p>
+        </div>
+      ) : filteredSchedules.length === 0 ? (
+        /* Empty State */
+        <div className="bg-white border border-dashed border-slate-200 p-16 rounded-3xl text-center max-w-xl mx-auto flex flex-col items-center">
+          <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 mb-4 shadow-3xs">
+            <AlertCircle size={26} />
+          </div>
+          <h3 className="text-base font-extrabold text-slate-800">Tidak Ada Agenda Kelas</h3>
+          <p className="text-xs text-slate-400 mt-1">Planner kosong untuk kriteria filter ini. Tambahkan agenda kelas baru di atas.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredSchedules.map((sch) => {
+            // Pasangkan warna dinamis berdasarkan mata kuliah
+            const matchedMatkul = MATKUL_DATA.find(m => m.name === sch.matkul);
+            const gradientColor = matchedMatkul ? matchedMatkul.color : "from-slate-700 to-slate-800";
+            const isTodayClass = sch.hari?.toLowerCase() === currentDayName?.toLowerCase();
+            const waktuLabel = getWaktuBadge(sch.jamMulai);
+
+            return (
+              <div 
+                key={sch.id}
+                className={`bg-white border rounded-2xl shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden relative group ${
+                  isTodayClass ? 'ring-2 ring-indigo-500 ring-offset-2' : 'border-slate-100'
+                }`}
+              >
+                {/* Header Bagian Atas Card */}
+                <div className="bg-slate-900 p-4 text-white relative">
+                  {isTodayClass && (
+                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded-md text-[9px] font-black tracking-wider uppercase text-white">
+                      Hari Ini
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold tracking-wider uppercase opacity-75 block">Mata Kuliah</span>
+                  <h3 className="text-sm font-black mt-1 leading-snug tracking-tight truncate-2-lines h-10">
+                    {sch.matkul}
+                  </h3>
+                </div>
+
+                {/* Konten Detail Parameter Jadwal */}
+                <div className="p-4 space-y-3 flex-1">
+                  {/* Badges Bar Row */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-extrabold text-[9px] uppercase tracking-wide">
+                      {sch.hari}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wide ${
+                      waktuLabel === 'Pagi' ? 'bg-sky-50 text-sky-700' : waktuLabel === 'Siang' ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'
+                    }`}>
+                      {waktuLabel}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide ${
+                      sch.jenisKelas === 'Online' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-800 text-white'
+                    }`}>
+                      {sch.jenisKelas || 'Offline'}
+                    </span>
+                  </div>
+
+                  {/* Detil Jam, Ruangan, Dosen */}
+                  <div className="pt-2 border-t border-slate-50 space-y-2.5 text-[11px] text-slate-500 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <Clock size={13} className="text-slate-400 flex-shrink-0" />
+                      <span>Jam: <strong className="text-slate-700 font-bold">{sch.jamMulai} - {sch.jamSelesai}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2 truncate">
+                      <MapPin size={13} className="text-slate-400 flex-shrink-0" />
+                      <span className="truncate">Ruang: <strong className="text-slate-700 font-bold">{sch.ruangan}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2 truncate">
+                      <User size={13} className="text-slate-400 flex-shrink-0" />
+                      <span className="truncate">Dosen: <strong className="text-indigo-600 font-bold">{sch.lecturer}</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Card: Info Bobot SKS & Tombol Aksi */}
+                <div className="bg-slate-50/70 border-t border-slate-100/80 px-4 py-3 flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
+                    Bobot: {sch.sks || 3} SKS
+                  </span>
+                  
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditModal(sch)}
+                      className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Ubah Jadwal"
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(sch.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                      title="Hapus Agenda"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* --- MODAL POPUP METRIC INPUT (BACKDROP GLASSMORPHISM BLUR) --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
+          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-100 shadow-2xl overflow-hidden transform transition-all max-h-[90vh] overflow-y-auto">
+            
+            {/* Header Form Popup */}
+            <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-black flex items-center gap-2">
+                  <Calendar size={15} className="text-indigo-400" />
+                  {isEditing ? 'Ubah Agenda Kuliah' : 'Tambah Agenda Kuliah'}
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Konfigurasi sinkronisasi jadwal mingguan mahasiswa.</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-slate-300">
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Form Fields Body */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              
+              {/* Mata Kuliah Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Mata Kuliah *</label>
+                <select
+                  value={matkul}
+                  onChange={(e) => setMatkul(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
+                >
+                  <option value="">Pilih Mata Kuliah Terdaftar</option>
+                  {MATKUL_DATA.map((m, idx) => <option key={idx} value={m.name}>{m.name} ({m.sks} SKS)</option>)}
+                </select>
+              </div>
+
+              {/* Dosen Option Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Dosen Pengampu *</label>
+                <select
+                  value={lecturer}
+                  onChange={(e) => setLecturer(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
+                >
+                  <option value="">Pilih Dosen Terdaftar</option>
+                  {DOSEN_LIST.map((d, idx) => <option key={idx} value={d}>{d}</option>)}
+                </select>
+              </div>
+
+              {/* Day / Hari Dropdown */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Hari *</label>
+                <select
+                  value={hari}
+                  onChange={(e) => setHari(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
+                >
+                  {HARI_LIST.map((h, idx) => <option key={idx} value={h}>{h}</option>)}
+                </select>
+              </div>
+
+              {/* Jam Grid Input */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Jam Mulai *</label>
+                  <input
+                    type="time"
+                    value={jamMulai}
+                    onChange={(e) => setJamMulai(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Jam Selesai *</label>
+                  <input
+                    type="time"
+                    value={jamSelesai}
+                    onChange={(e) => setJamSelesai(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Ruangan Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Ruangan / Tautan Kelas *</label>
+                <input
+                  type="text"
+                  placeholder="E.g., Ruang Teori 4.3 atau Tautan Zoom..."
+                  value={ruangan}
+                  onChange={(e) => setRuangan(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              {/* Jenis Kelas Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 block">Metode Pembelajaran</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Offline', 'Online'].map((j) => (
+                    <button
+                      key={j}
+                      type="button"
+                      onClick={() => setJenisKelas(j)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                        jenisKelas === j
+                          ? 'bg-slate-900 border-slate-950 text-white ring-2 ring-slate-900/10'
+                          : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      {j}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons Modal Footer */}
+              <div className="pt-4 flex justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-md flex items-center gap-2 transition-all disabled:opacity-50 ${
+                    isEditing 
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-100' 
+                      : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-indigo-100'
+                  }`}
+                >
+                  {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+                  {isEditing ? 'Simpan Pembaruan' : 'Publish Jadwal'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
