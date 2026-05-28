@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link, Outlet } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, LogOut, Menu, X, GraduationCap, Calendar, User, Camera, Check } from "lucide-react";
+import { LayoutDashboard, ClipboardList, LogOut, Menu, X, GraduationCap, Calendar, User, Camera, Check, BookOpen } from "lucide-react";
 import { userService } from "../services/firebase";
 import { MessageSquare } from 'lucide-react';
 
@@ -32,6 +32,7 @@ export default function UserLayout() {
   const menuItems = [
     { path: '/user-dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { path: '/announcements', name: 'Pengumuman', icon: MessageSquare },
+    { path: '/user-task-list', name: 'Daftar Tugas', icon: BookOpen },
     { path: '/user-schedule', name: 'Jadwal Kuliah', icon: Calendar },
     { path: '/student-quizzes', name: 'Quiz', icon: ClipboardList },
     { path: '/user-profile', name: 'Profile', icon: User },

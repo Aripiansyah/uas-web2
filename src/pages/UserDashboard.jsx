@@ -3,8 +3,10 @@ import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, BarChart, Ba
 import { CheckCircle2, Clock, BookOpen, User, Calendar, Award, Trash2, Trophy, Medal } from 'lucide-react';
 import { taskService, userService, scheduleService, quizService } from '../services/firebase';
 import Toast from '../components/Toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function UserDashboard() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState({ name: 'User' });
   const [tasks, setTasks] = useState([]);
   const [userCompletedTasks, setUserCompletedTasks] = useState([]);
@@ -26,17 +28,31 @@ export default function UserDashboard() {
     // Get current user dari localStorage
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (user) {
+      const normalizeRole = (role) => {
+        if (!role) return '';
+        const r = String(role).trim().toLowerCase();
+        if (r.includes('admin')) return 'Admin';
+        if (r === 'user' || r.includes('user') || r.includes('student') || r.includes('mahasiswa')) return 'User';
+        return role;
+      };
+
+      const normalizedRole = normalizeRole(user.role);
+      if (normalizedRole === 'Admin') {
+        navigate('/');
+        return;
+      }
+
       setCurrentUser(user);
 
       // Subscribe to user's quiz completions and fetch stats whenever they change
-      const unsubscribeQuizCompletions = quizService.subscribeUserQuizCompletions(user.uid, async (completions) => {
+      const unsubscribeQuizCompletions = quizService.subscribeUserQuizCompletions(user.uid, async () => {
         const stats = await quizService.getUserQuizStats(user.uid);
         setQuizStats(stats);
       });
 
       return () => unsubscribeQuizCompletions();
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     // Get current user dari localStorage

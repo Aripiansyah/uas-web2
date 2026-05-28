@@ -62,7 +62,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex overflow-hidden font-sans selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-[#ffffff] flex overflow-hidden font-sans selection:bg-cyan-500">
       
       {/* Background Animated Blobs */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -73,7 +73,7 @@ export default function Login() {
             opacity: [0.3, 0.2, 0.3] 
           }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-600/30 blur-[120px]"
+          className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-white/30 blur-[120px]"
         />
         <motion.div 
           animate={{ 
@@ -115,7 +115,8 @@ export default function Login() {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="flex items-center gap-4 text-slate-500 text-sm"
         >
-          <p>© 2026 Crafted for Excellence.</p>
+          <p>© 2026 Crafted for Sahrul Aripiansyah</p>
+          <p>All rights reserved.</p>
         </motion.div>
       </div>
 
@@ -128,7 +129,7 @@ export default function Login() {
           className="w-full max-w-md"
         >
           {/* Glassmorphism Card */}
-          <div className="bg-slate-900/50 backdrop-blur-2xl border border-slate-800 p-8 rounded-3xl shadow-[0_0_40px_rgba(8,112,184,0.1)]">
+          <div className="bg-white-500 border border-green-800 p-8 rounded-3xl shadow-[0_0_40px_rgba(8,112,184,0.1)]">
             
             {/* Header Mobile Only */}
             <div className="lg:hidden mb-8 text-center">
@@ -159,7 +160,7 @@ export default function Login() {
               
               {/* NIM Input */}
               <div className="space-y-2 group">
-                <label className="text-sm font-medium text-slate-300">NIM</label>
+                <label className="text-sm font-medium text-slate-700" >NIM</label>
                 <div className="relative flex items-center">
                   <Mail className="absolute left-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-300 w-5 h-5" />
                   <input

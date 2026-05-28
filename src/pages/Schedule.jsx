@@ -6,21 +6,46 @@ import {
 } from 'lucide-react';
 import { scheduleService } from '../services/firebase'; // Pastikan service ini sudah Anda buat/sesuaikan
 
-// Konfigurasi Pilihan Dosen Tetap agar Sinkron dengan Page Lain
-const DOSEN_LIST = [
-  "Dr. Andi Saputra",
-  "Budi Rahman, M.Kom",
-  "Siti Nurhaliza, S.T., M.T.",
-  "Ahmad Fauzi, M.Kom"
+/**
+ * Pakai urutan yang sama persis seperti di src/pages/Tasks.jsx
+ * supaya:
+ *  - Matkul index ke-n => Dosen index ke-n (otomatis)
+ *  - Tampilan kartu menampilkan nama dosen
+ */
+
+// Konfigurasi Pilihan Mata Kuliah (urutan sinkron)
+const MATKUL_LIST = [
+  "Pemrograman Web 2",
+  "Android Development Associate (ADA)",
+  "Metodologi Penelitian Informatika",
+  "Penambangan Data",
+  "Pengujian Perangkat Lunak",
+  "Sistem Mikrokontroler",
+  "Teknik Penulisan Literatur Ilmiah"
 ];
 
-// Konfigurasi Pilihan Mata Kuliah & SKS bawaan
+// Konfigurasi Pilihan Dosen Tetap (urutan sinkron)
+const DOSEN_LIST = [
+  "Muhammad Reksa Ariansyah, M.Kom.",
+  "Andri Nugraha Ramdhon, S.Kom., M.Kom.",
+  "Muhammad Shalahuddin, ST., MT.",
+  "Iis Ismawati, S.Kom., M.Kom.",
+  "Brian Damastu, M.Kom.",
+  "Muchamad Rusdan, ST., MT.",
+  "Muhamad Fajar Rizkia, M.Pd."
+];
+
+// Konfigurasi Pilihan Mata Kuliah & SKS bawaan (untuk warna di kartu & input SKS)
 const MATKUL_DATA = [
-  { name: "Pemrograman Mobile 2", sks: 3, color: "from-blue-600 to-cyan-600" },
-  { name: "Rekayasa Perangkat Lunak", sks: 3, color: "from-indigo-600 to-purple-600" },
-  { name: "Basis Data Lanjut", sks: 3, color: "from-amber-500 to-orange-600" },
-  { name: "Analisis Algoritma", sks: 2, color: "from-rose-500 to-pink-600" },
-  { name: "Kecerdasan Buatan", sks: 3, color: "from-emerald-500 to-teal-600" }
+  { name: "Pemrograman Web 2", sks: 3, color: "from-blue-600 to-cyan-600" },
+  { name: "Android Development Associate (ADA)", sks: 3, color: "from-indigo-600 to-purple-600" },
+  { name: "Metodologi Penelitian Informatika", sks: 3, color: "from-amber-500 to-orange-600" },
+  { name: "Penambangan Data", sks: 3, color: "from-rose-500 to-pink-600" },
+  { name: "Pengujian Perangkat Lunak", sks: 3, color: "from-emerald-500 to-teal-600" },
+
+  // 2 matkul tambahan: pakai warna netral (tanpa tambah gradien baru)
+  { name: "Sistem Mikrokontroler", sks: 3, color: "from-slate-700 to-slate-800" },
+  { name: "Teknik Penulisan Literatur Ilmiah", sks: 2, color: "from-slate-700 to-slate-800" }
 ];
 
 const HARI_LIST = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -172,10 +197,11 @@ export default function Schedules() {
 
   // --- FILTER & SEARCH PROCESSING ---
   const filteredSchedules = schedules.filter(sch => {
-    const matchesSearch = sch.matkul?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matkulValue = sch.matkul || sch.subject || '';
+    const matchesSearch = matkulValue?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           sch.lecturer?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesHariSelect = filterHari === 'All' || sch.hari === filterHari;
-    const matchesMatkulSelect = filterMatkul === 'All' || sch.matkul === filterMatkul;
+    const matchesMatkulSelect = filterMatkul === 'All' || matkulValue === filterMatkul;
     
     // Sinkronisasi dengan Tab Filter Horizontal Mingguan
     const matchesTabHari = selectedDayTab === 'All' || sch.hari === selectedDayTab;
@@ -218,9 +244,9 @@ export default function Schedules() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2.5 text-right flex flex-col justify-center">
-            <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Kalender Hari Ini</span>
-            <span className="text-xs font-bold text-slate-700 mt-0.5">{todayFormatted}</span>
+          <div className="bg-slate-40 border border-blue-500/90 rounded-xl px-2 py-2.5 text-center flex flex-col justify-center items-end gap-0.5">
+            <span className="text-[10px] uppercase font-black tracking-wider text-cyan-400">Kalender Hari Ini</span>
+            <span className="text-xs font-bold text-red-700 mt-0.5">{todayFormatted}</span>
           </div>
           <button
             onClick={openAddModal}
@@ -238,42 +264,42 @@ export default function Schedules() {
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Layers size={20} /></div>
           <div>
-            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Total Matkul</div>
-            <div className="text-xl font-black text-slate-800 mt-0.5">{totalMatkul} <span className="text-xs font-medium text-slate-400">Kelas</span></div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-blue-400">Total Matkul</div>
+            <div className="text-xl font-black text-yellow-400 mt-0.5">{totalMatkul} <span className="text-xs font-medium text-shadow-fuchsia-400">Kelas</span></div>
           </div>
         </div>
         {/* Stat 2 */}
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
           <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><BookOpen size={20} /></div>
           <div>
-            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Akumulasi SKS</div>
-            <div className="text-xl font-black text-slate-800 mt-0.5">{totalSKS} <span className="text-xs font-medium text-slate-400">Bobot</span></div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-purple-400">Akumulasi SKS</div>
+            <div className="text-xl font-black text-green-400 mt-0.5">{totalSKS} <span className="text-xs font-medium text-shadow-fuchsia-400">Bobot</span></div>
           </div>
         </div>
         {/* Stat 3 */}
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
           <div>
-            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Jadwal Hari Ini</div>
-            <div className="text-xl font-black text-slate-800 mt-0.5">{jadwalHariIniCount} <span className="text-xs font-medium text-slate-400">Matkul</span></div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-amber-600">Jadwal Hari Ini</div>
+            <div className="text-xl font-black text-fuchsia-500 mt-0.5">{jadwalHariIniCount} <span className="text-xs font-medium text-shadow-indigo-600">Matkul</span></div>
           </div>
         </div>
         {/* Stat 4 */}
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-4">
           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><Monitor size={20} /></div>
           <div>
-            <div className="text-[10px] uppercase font-black tracking-wider text-slate-400">Kelas Online</div>
-            <div className="text-xl font-black text-slate-800 mt-0.5">{kelasOnlineCount} <span className="text-xs font-medium text-slate-400">Vicon</span></div>
+            <div className="text-[10px] uppercase font-black tracking-wider text-emerald-400">Kelas Online</div>
+            <div className="text-xl font-black text-cyan-400 mt-0.5">{kelasOnlineCount} <span className="text-xs font-medium text-shadow-cyan-400">Vicon</span></div>
           </div>
         </div>
       </div>
 
       {/* --- WEEKLY HORIZONTAL CALENDAR PLANNER ROW --- */}
-      <div className="bg-slate-900 text-white p-2.5 rounded-2xl flex flex-wrap gap-1 shadow-md">
+      <div className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white p-2.5 rounded-2xl flex flex-wrap gap-1 shadow-md">
         <button
           onClick={() => setSelectedDayTab('All')}
           className={`flex-1 min-w-[70px] text-center py-2 px-3 rounded-xl text-xs font-bold transition-all ${
-            selectedDayTab === 'All' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-400 hover:text-white'
+            selectedDayTab === 'All' ? 'bg-white text-green-400 shadow-xs' : 'text-black-800 hover:text-white'
           }`}
         >
           Semua Hari
@@ -286,8 +312,8 @@ export default function Schedules() {
               onClick={() => setSelectedDayTab(day)}
               className={`flex-1 min-w-[70px] text-center py-2 px-3 rounded-xl text-xs font-bold transition-all relative ${
                 selectedDayTab === day 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-white text-purple-600 shadow-md' 
+                  : 'text-white-400 hover:text-white hover:bg-white/5'
               }`}
             >
               {day}
@@ -353,11 +379,11 @@ export default function Schedules() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredSchedules.map((sch) => {
             // Pasangkan warna dinamis berdasarkan mata kuliah
-            const matchedMatkul = MATKUL_DATA.find(m => m.name === sch.matkul);
+            const matkulValue = sch.matkul || sch.subject || '-';
+            const matchedMatkul = MATKUL_DATA.find(m => m.name === matkulValue);
             const gradientColor = matchedMatkul ? matchedMatkul.color : "from-slate-700 to-slate-800";
             const isTodayClass = sch.hari?.toLowerCase() === currentDayName?.toLowerCase();
             const waktuLabel = getWaktuBadge(sch.jamMulai);
-
             return (
               <div 
                 key={sch.id}
@@ -366,15 +392,15 @@ export default function Schedules() {
                 }`}
               >
                 {/* Header Bagian Atas Card */}
-                <div className="bg-slate-900 p-4 text-white relative">
+                <div className={`bg-gradient-to-r ${gradientColor} p-4 text-white relative`}>
                   {isTodayClass && (
                     <span className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded-md text-[9px] font-black tracking-wider uppercase text-white">
                       Hari Ini
                     </span>
                   )}
                   <span className="text-[10px] font-bold tracking-wider uppercase opacity-75 block">Mata Kuliah</span>
-                  <h3 className="text-sm font-black mt-1 leading-snug tracking-tight truncate-2-lines h-10">
-                    {sch.matkul}
+                  <h3 className="text-sm font-black mt-1 leading-snug tracking-tight truncate-2-lines h-10 text-[#ffffff]">
+                    {matkulValue}
                   </h3>
                 </div>
 
@@ -398,14 +424,14 @@ export default function Schedules() {
                   </div>
 
                   {/* Detil Jam, Ruangan, Dosen */}
-                  <div className="pt-2 border-t border-slate-50 space-y-2.5 text-[11px] text-slate-500 font-semibold">
+                  <div className="pt-2 border-t border-slate-50 space-y-2.5 text-[11px] text-purple-900 from-indigo-900 to-violet-600ont-semibold">
                     <div className="flex items-center gap-2">
                       <Clock size={13} className="text-slate-400 flex-shrink-0" />
-                      <span>Jam: <strong className="text-slate-700 font-bold">{sch.jamMulai} - {sch.jamSelesai}</strong></span>
+                      <span>Jam: <strong className="text-green-700 font-bold">{sch.jamMulai} - {sch.jamSelesai}</strong></span>
                     </div>
                     <div className="flex items-center gap-2 truncate">
                       <MapPin size={13} className="text-slate-400 flex-shrink-0" />
-                      <span className="truncate">Ruang: <strong className="text-slate-700 font-bold">{sch.ruangan}</strong></span>
+                      <span className="truncate">Ruang: <strong className="text-purple-700 font-bold">{sch.ruangan}</strong></span>
                     </div>
                     <div className="flex items-center gap-2 truncate">
                       <User size={13} className="text-slate-400 flex-shrink-0" />
@@ -471,7 +497,14 @@ export default function Schedules() {
                 <label className="text-xs font-bold text-slate-700 block">Mata Kuliah *</label>
                 <select
                   value={matkul}
-                  onChange={(e) => setMatkul(e.target.value)}
+                  onChange={(e) => {
+                    const nextMatkul = e.target.value;
+                    setMatkul(nextMatkul);
+
+                    const idx = MATKUL_LIST.indexOf(nextMatkul);
+                    const nextLecturer = idx >= 0 && idx < DOSEN_LIST.length ? DOSEN_LIST[idx] : '';
+                    setLecturer(nextLecturer);
+                  }}
                   className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
                 >
                   <option value="">Pilih Mata Kuliah Terdaftar</option>

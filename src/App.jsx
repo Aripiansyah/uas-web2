@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import UserDashboard from './pages/UserDashboard';
 import UserSchedule from './pages/UserSchedule';
 import UserProfile from './pages/UserProfile';
+import UserTaskList from './pages/UserTaskList';
 import ResetQuizScores from './pages/ResetQuizScores';
 import ResetScore from './pages/admin/ResetScore';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -100,6 +101,11 @@ export default function App() {
           <Route path="/user-profile" element={
             <ProtectedRoute allowedRoles={['User']}>
               <UserProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/user-task-list" element={
+            <ProtectedRoute allowedRoles={['User']}>
+              <UserTaskList />
             </ProtectedRoute>
           } />
         </Route>

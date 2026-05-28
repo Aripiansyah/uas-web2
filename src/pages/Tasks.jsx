@@ -8,19 +8,24 @@ import { taskService, userService } from '../services/firebase';
 
 // Daftar Dosen Tetap sesuai Request
 const DOSEN_LIST = [
-  "Dr. Andi Saputra",
-  "Budi Rahman, M.Kom",
-  "Siti Nurhaliza, S.T., M.T.",
-  "Ahmad Fauzi, M.Kom"
+  "Muhammad Reksa Ariansyah, M.Kom.",
+  "Andri Nugraha Ramdhon, S.Kom., M.Kom.",
+  "Muhammad Shalahuddin, ST., MT.",
+  "Iis Ismawati, S.Kom., M.Kom.",
+  "Brian Damastu, M.Kom.",
+  "Muchamad Rusdan, ST., MT.",
+  "Muhamad Fajar Rizkia, M.Pd."
 ];
 
 // Daftar Mata Kuliah
 const MATKUL_LIST = [
-  "Pemrograman Mobile 2",
-  "Rekayasa Perangkat Lunak",
-  "Basis Data Lanjut",
-  "Analisis Algoritma",
-  "Kecerdasan Buatan"
+  "Pemrograman Web 2",
+  "Android Development Associate (ADA)",
+  "Metodologi Penelitian Informatika",
+  "Penambangan Data",
+  "Pengujian Perangkat Lunak",
+  "Sistem Mikrokontroler",
+  "Teknik Penulisan Literatur Ilmiah"
 ];
 
 export default function Tasks() {
@@ -81,6 +86,45 @@ export default function Tasks() {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 4000);
   };
 
+  // --- HELPER FUNCTION TO FORMAT PUBLISH TIME ---
+  const formatPublishTime = (date) => {
+    if (!date) return '-';
+    try {
+      const publishDate = date instanceof Date ? date : new Date(date);
+      const now = new Date();
+      const diffMs = now - publishDate;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'Baru saja';
+      if (diffMins < 60) return `${diffMins}m yang lalu`;
+      if (diffHours < 24) return `${diffHours}h yang lalu`;
+      if (diffDays < 7) return `${diffDays}d yang lalu`;
+      
+      return publishDate.toLocaleDateString('id-ID');
+    } catch (error) {
+      return '-';
+    }
+  };
+  const formatDeadlineWithTime = (deadlineStr) => {
+    if (!deadlineStr) return '-';
+    try {
+      const date = new Date(deadlineStr);
+      const options = { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      };
+      return date.toLocaleDateString('id-ID', options).replace(',', ' |');
+    } catch (error) {
+      return deadlineStr;
+    }
+  };
+
   // --- CRUD HANDLERS ---
   const resetForm = () => {
     setIsEditing(false);
@@ -125,9 +169,15 @@ export default function Tasks() {
       priority,
       status,
       publisher: currentUser.name,
+      publisherInfo: {
+        name: currentUser.name,
+        role: 'Admin Akademik',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(currentUser.name)
+      },
       isCompleted: status === 'Selesai',
       assignedTo: assignedTo, // IMPORTANT: tambahkan field ini untuk filter per user
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      createdAt: isEditing ? undefined : new Date()
     };
 
     try {
@@ -261,7 +311,17 @@ export default function Tasks() {
               <Folder className="absolute left-4 top-3.5 text-slate-400" size={16} />
               <select
                 value={matkul}
-                onChange={(e) => setMatkul(e.target.value)}
+                onChange={(e) => {
+                  const nextMatkul = e.target.value;
+                  setMatkul(nextMatkul);
+
+                  const idx = MATKUL_LIST.indexOf(nextMatkul);
+                  const nextLecturer = idx >= 0 && idx < DOSEN_LIST.length ? DOSEN_LIST[idx] : '';
+                  setLecturer(nextLecturer);
+
+                  // tutup dropdown dosen kalau sedang terbuka
+                  setIsDosenOpen(false);
+                }}
                 className="w-full pl-11 pr-10 py-3 bg-slate-50/60 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer"
               >
                 <option value="">Pilih Mata Kuliah Terdaftar</option>
@@ -309,7 +369,7 @@ export default function Tasks() {
             <div className="relative">
               <Calendar className="absolute left-4 top-3.5 text-slate-400" size={16} />
               <input 
-                type="date" 
+                type="datetime-local" 
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-slate-50/60 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all"
@@ -615,31 +675,61 @@ export default function Tasks() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar size={13} className="text-slate-400 flex-shrink-0" />
-                        <span>Deadline: <strong className={isHigh && !isDone ? 'text-rose-600 font-bold' : 'text-slate-700 font-bold'}>{task.deadline}</strong></span>
+                        <span>Deadline: <strong className={isHigh && !isDone ? 'text-rose-600 font-bold' : 'text-slate-700 font-bold'}>{formatDeadlineWithTime(task.deadline)}</strong></span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bagian Footer Card: Info Akun Publisher & CRUD Action Buttons */}
-                  <div className="border-t border-slate-100/80 pt-4 mt-4 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 italic truncate max-w-[100px]">By: {task.publisher || 'Admin'}</span>
+                  {/* Bagian Footer Card: Info Publisher dengan Avatar */}
+                  <div className="border-t border-slate-100/80 pt-3 mt-4 flex items-center justify-between gap-3">
+                    {/* Publisher Info */}
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      {/* Avatar Publisher */}
+                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-slate-200 shadow-xs flex-shrink-0 bg-slate-100">
+                        {task.publisherInfo?.avatar ? (
+                          <img 
+                            src={task.publisherInfo.avatar} 
+                            alt={task.publisherInfo.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div style={{ display: task.publisherInfo?.avatar ? 'none' : 'flex' }} className="w-full h-full items-center justify-center bg-gradient-to-br from-indigo-400 to-purple-400 text-white text-xs font-bold">
+                          {task.publisherInfo?.name?.charAt(0) || 'A'}
+                        </div>
+                      </div>
+                      
+                      {/* Publisher Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-bold text-slate-700 truncate">
+                          {task.publisherInfo?.name || task.publisher || 'Admin'}
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-medium">
+                          {task.publisherInfo?.role || 'Admin'} • {formatPublishTime(task.createdAt)}
+                        </div>
+                      </div>
+                    </div>
                     
-                    <div className="flex items-center gap-1">
+                    {/* CRUD Action Buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       {/* Button Edit */}
                       <button
                         onClick={() => handleEditTrigger(task)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="Ubah Rincian Tugas"
                       >
-                        <Edit3 size={14} />
+                        <Edit3 size={13} />
                       </button>
                       {/* Button Delete */}
                       <button
                         onClick={() => handleDelete(task.id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                         title="Hapus Permanen"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
