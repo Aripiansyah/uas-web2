@@ -245,12 +245,13 @@ export default function Login() {
             <div className="mt-8 pt-6 border-t border-slate-800 text-center">
               <p className="text-sm text-slate-400">
                 Belum punya akun?{' '}
-                <a 
-                  href="https://wa.me/qr/XONRC742AVSRO1" 
+                <a
+                  href="/registrasi"
                   className="text-cyan-400 font-semibold hover:text-teal-300 transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-[2px] after:bg-teal-300 hover:after:w-full after:transition-all after:duration-300"
                 >
-                  Hubungi Admin
+                  Daftar
                 </a>
+                {' '}•{' '}
               </p>
             </div>
 

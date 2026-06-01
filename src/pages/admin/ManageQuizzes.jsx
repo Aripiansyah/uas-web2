@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, HelpCircle, Trash2, Loader2, X, CheckCircle, Save, FileText } from 'lucide-react';
-import { db } from '../services/firebase';
+import { db } from '../../services/firebase';
 import { collection, query, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export default function ManageQuizzes() {

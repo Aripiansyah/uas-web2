@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, ArrowRight, CheckCircle, Award, HelpCircle, Lock } from 'lucide-react';
-import { db, quizService } from '../services/firebase';
+import { db, quizService } from '../../services/firebase';
 import { collection, query, onSnapshot } from 'firebase/firestore';
-import { userService } from '../services/firebase';
-import Toast from '../components/Toast';
+import { userService } from '../../services/firebase';
+import Toast from '../../components/Toast';
 
 export default function StudentQuizzes() {
   const [quizzes, setQuizzes] = useState([]);
@@ -120,7 +120,8 @@ export default function StudentQuizzes() {
           {quizzes.map((quiz) => {
             const isCompleted = completedQuizzes.includes(quiz.id);
             return (
-              <div key={quiz.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-2xs flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div key={quiz.id} className="bg-white border-1 border-cyan-200 rounded-2xl p-5 shadow-2xs flex flex-col justify-between hover:shadow-md transition-shadow  --tw-shadow: 0 4px 6px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 2px 4px -2px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+            box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)">
                 <div>
                   <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-600">
                     {quiz.category}
@@ -160,13 +161,13 @@ export default function StudentQuizzes() {
         </div>
       ) : (
         /* --- ARENA BERJALAN: MULTIPLE QUESTIONS BUNDLE ENGINE --- */
-        <div className="max-w-xl mx-auto bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden">
-          <div className="bg-slate-950 p-5 text-white flex justify-between items-center">
+        <div className="max-w-xl mx-auto bg-white border border-green-700 rounded-3xl shadow-3xl overflow-hidden">
+          <div className="bg-cyan-300 p-5 text-amber-300 flex justify-between items-center">
             <div>
               <span className="text-[9px] font-black text-indigo-400 uppercase tracking-wider">{activeBundle.category}</span>
               <h3 className="text-xs font-bold text-slate-300">{activeBundle.title}</h3>
             </div>
-            <button onClick={handleCloseArena} className="text-xs font-bold px-3 py-1 bg-white/10 text-slate-300 rounded-lg">Keluar</button>
+            <button onClick={handleCloseArena} className="text-xs font-bold px-3 py-1 bg-green-600 text-slate-300 rounded-lg">Keluar</button>
           </div>
 
           {!quizFinished ? (
@@ -174,14 +175,14 @@ export default function StudentQuizzes() {
             <div className="p-6 space-y-5">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Pertanyaan No. {currentQuestionIdx + 1} dari {activeBundle.questions.length}</span>
-                <span className="text-[10px] font-bold text-slate-400 font-mono">Progress: {Math.round(((currentQuestionIdx)/activeBundle.questions.length)*100)}%</span>
+                <span className="text-[10px] font-bold text-slate-700 font-mono">Progress: {Math.round(((currentQuestionIdx)/activeBundle.questions.length)*100)}%</span>
               </div>
 
-              <p className="text-sm font-bold text-slate-800 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p className="text-sm font-bold text-slate-800 leading-relaxed bg-purple-400 p-4 rounded-2xl border border-amber-100">
                 {activeBundle.questions[currentQuestionIdx].question}
               </p>
 
-              <div className="space-y-2">
+              <div className="space-y-2 border-purple-400 border rounded-2xl p-8 bg-purple-50">
                 {['A', 'B', 'C', 'D'].map((letter, index) => {
                   const optText = activeBundle.questions[currentQuestionIdx].options[index];
                   const isSelected = selectedAnswer === letter;
@@ -205,7 +206,7 @@ export default function StudentQuizzes() {
               <button
                 onClick={handleNextQuestion}
                 disabled={!selectedAnswer || isSavingScore}
-                className="w-full py-3 bg-slate-900 disabled:opacity-40 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                className="w-full py-3 bg-purple-400 disabled:opacity-200 text-blue-700 text-sm font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
               >
                 {isSavingScore ? (
                   <>
@@ -234,19 +235,19 @@ export default function StudentQuizzes() {
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-[10px] font-black uppercase text-slate-400 block">Skor Akumulasi</span>
-                  <span className="text-2xl font-black text-slate-800 mt-0.5">{calculateFinalScore()} / 100</span>
+                  <span className="text-2xl font-black text-amber-500 mt-0.5">{calculateFinalScore()} / 100</span>
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase text-slate-400 block">Jawaban Benar</span>
                   <span className="text-2xl font-black text-emerald-600 mt-0.5">
-                    {answersLog.filter(v => v === true).length} <span className="text-xs font-bold text-slate-400">dari {activeBundle.questions.length}</span>
+                    {answersLog.filter(v => v === true).length} <span className="text-xs font-bold text-emerald-600">dari {activeBundle.questions.length}</span>
                   </span>
                 </div>
               </div>
 
               <button
                 onClick={handleCloseArena}
-                className="px-6 py-2.5 bg-slate-950 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-98"
+                className="px-6 py-2.5 bg-cyan-300 text-cyan-900 font-bold text-sm rounded-xl shadow-md transition-all active:scale-98"
               >
                 Kembali Ke Arena Utama
               </button>

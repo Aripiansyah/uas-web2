@@ -113,7 +113,26 @@ export const taskService = {
 
   addTask: async (task) => await addDoc(collection(db, 'tasks'), task),
   updateTask: async (id, task) => await updateDoc(doc(db, 'tasks', id), task),
-  deleteTask: async (id) => await deleteDoc(doc(db, 'tasks', id))
+  deleteTask: async (id) => await deleteDoc(doc(db, 'tasks', id)),
+
+  // Get all task completions (admin/top completion dashboard helper)
+  getAllTaskCompletions: async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'taskCompletions'));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error("Error getting all task completions:", error);
+      return [];
+    }
+  },
+
+  // Realtime listener for all task completions
+  subscribeAllTaskCompletions: (callback) => {
+    return onSnapshot(collection(db, 'taskCompletions'), (snapshot) => {
+      const completions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(completions);
+    });
+  },
 };
 
 export const userService = {

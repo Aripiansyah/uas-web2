@@ -4,7 +4,8 @@ import {
   Trash2, Edit3, CheckCircle, SlidersHorizontal, Loader2, 
   FileText, Check, ChevronDown, Folder, UserCheck
 } from 'lucide-react';
-import { taskService, userService } from '../services/firebase';
+import { taskService, userService } from '../../services/firebase';
+import Loading from '../../components/Loading';
 
 // Daftar Dosen Tetap sesuai Request
 const DOSEN_LIST = [
@@ -36,10 +37,13 @@ export default function Tasks() {
   const [users, setUsers] = useState([]);
   
   // Simulasi Akun Pengguna Aktif sebagai Publisher Otomatis
-  const currentUser = { name: "Sahrul Aripiansyah" };
+  const currentUser = { name: "Administrator Utama", role: "Admin Akademik" };
 
   // Form States
   const [isEditing, setIsEditing] = useState(false);
+
+  const [crudBusy, setCrudBusy] = useState(false);
+  const [networkError, setNetworkError] = useState(null);
   const [currentTaskId, setCurrentTaskId] = useState(null);
   const [title, setTitle] = useState('');
   const [matkul, setMatkul] = useState('');
@@ -148,8 +152,18 @@ export default function Tasks() {
       return;
     }
 
+    setNetworkError(null);
+
+    // Offline handling (no internet)
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setNetworkError('Tidak ada internet. Periksa koneksi lalu coba lagi.');
+      showToast('Tidak ada internet. Coba lagi nanti.', 'error');
+      return;
+    }
+
     setSubmitting(true);
-    
+    setCrudBusy(true);
+
     // Tentukan assigned users
     let assignedTo = [];
     if (assignAllUsers) {
@@ -171,7 +185,7 @@ export default function Tasks() {
       publisher: currentUser.name,
       publisherInfo: {
         name: currentUser.name,
-        role: 'Admin Akademik',
+        role: currentUser.role,
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(currentUser.name)
       },
       isCompleted: status === 'Selesai',
@@ -194,6 +208,7 @@ export default function Tasks() {
       showToast('Terjadi kesalahan integrasi database.', 'error');
     } finally {
       setSubmitting(false);
+      setCrudBusy(false);
     }
   };
 
@@ -224,13 +239,25 @@ export default function Tasks() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Apakah Anda yakin ingin menghapus kartu tugas premium ini?')) {
-      try {
-        await taskService.deleteTask(id);
-        showToast('Kartu tugas berhasil dihapus permanen.', 'success');
-      } catch (error) {
-        showToast('Gagal menghapus data.', 'error');
-      }
+    if (!confirm('Apakah Anda yakin ingin menghapus kartu tugas premium ini?')) return;
+
+    setNetworkError(null);
+
+    // Offline handling (no internet)
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setNetworkError('Tidak ada internet. Periksa koneksi lalu coba lagi.');
+      showToast('Tidak ada internet. Coba lagi nanti.', 'error');
+      return;
+    }
+
+    try {
+      setCrudBusy(true);
+      await taskService.deleteTask(id);
+      showToast('Kartu tugas berhasil dihapus permanen.', 'success');
+    } catch (error) {
+      showToast('Gagal menghapus data.', 'error');
+    } finally {
+      setCrudBusy(false);
     }
   };
 
@@ -247,6 +274,26 @@ export default function Tasks() {
 
   return (
     <div className="w-full space-y-10 pb-16">
+      {networkError && (
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 shadow-sm flex items-start gap-3">
+            <span className="text-rose-600 font-black">!</span>
+            <div className="text-xs font-bold">
+              {networkError}
+              <div className="text-[10px] font-semibold text-rose-700 mt-1">CRUD tidak diproses.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {crudBusy && (
+        <div className="fixed inset-0 z-[10000] bg-transparent flex items-center justify-center">
+          <div className="rounded-2xl px-6 py-4 bg-transparent border border-transparent shadow-none">
+            <Loading />
+            <p className="text-xs font-black text-slate-700 mt-3 text-center">Memproses perubahan data...</p>
+          </div>
+        </div>
+      )}
       
       {/* Toast Notification Premium */}
       {toast.show && (

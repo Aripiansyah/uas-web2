@@ -2,15 +2,21 @@ import React, { useState, useEffect } from 'react';
 import {
   Search, Calendar, User, BookOpen, AlertCircle,
   CheckCircle, SlidersHorizontal, Loader2,
-  Clock, Zap, Flag, TrendingUp
+  Clock, Zap, Flag, TrendingUp, Check
 } from 'lucide-react';
-import { taskService, userService } from '../services/firebase';
+import { taskService, userService } from '../../services/firebase';
+import Loading from '../../components/Loading';
 
 export default function UserTaskList() {
   // --- STATE MANAGEMENT ---
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [loadingTaskId, setLoadingTaskId] = useState(null); // Track which task is being updated
+  const [completedTaskIds, setCompletedTaskIds] = useState([]);
+
+  const [crudBusy, setCrudBusy] = useState(false);
+  const [networkError, setNetworkError] = useState(null);
 
   // Filter & Search States
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,31 +32,59 @@ export default function UserTaskList() {
       const user = JSON.parse(storedUser);
       setCurrentUser(user);
     }
-    setLoading(false);
   }, []);
 
   // --- LOAD TASKS ---
   useEffect(() => {
+    if (!currentUser) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    const userId = currentUser?.uid || currentUser?.id;
+
+    if (!userId) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
+    
+    // Subscribe to all tasks untuk bisa filter yang assignedTo-nya kosong juga
     const unsubscribe = taskService.subscribeTasks((fetchedTasks) => {
       // Filter tasks yang di-assign ke current user atau ke semua user
-      const userId = currentUser?.uid || currentUser?.id;
-
       const userTasks = fetchedTasks.filter(task => {
-        if (!task.assignedTo) return false;
-        if (!Array.isArray(task.assignedTo)) return false;
+        // Pastikan assignedTo ada dan berbentuk array
+        if (!task.assignedTo || !Array.isArray(task.assignedTo)) {
+          return false;
+        }
 
-        const assignedToMatch = userId ? task.assignedTo.includes(userId) : false;
-
-        // Jika assignedTo kosong => berarti task untuk semua user
-        return assignedToMatch || task.assignedTo.length === 0;
+        // Include: task yang di-assign ke user ini ATAU task dengan assignedTo kosong (untuk semua)
+        return task.assignedTo.includes(userId) || task.assignedTo.length === 0;
       });
 
       setTasks(userTasks);
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, [currentUser]);
+
+  // --- SUBSCRIBE PER-USER COMPLETIONS (FIX: completion must be per user, not global) ---
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const unsubscribe = taskService.subscribeUserTaskCompletions(
+      currentUser.uid,
+      (ids) => {
+        setCompletedTaskIds(Array.isArray(ids) ? ids : []);
+      }
+    );
+
+    return () => unsubscribe?.();
+  }, [currentUser?.uid]);
 
   // --- HELPER FUNCTIONS ---
   const formatDeadlineWithTime = (deadlineStr) => {
@@ -115,14 +149,47 @@ export default function UserTaskList() {
     }
   };
 
+  // --- COMPLETE TASK HANDLER ---
+  const handleCompleteTask = async (taskId) => {
+    try {
+      if (!currentUser?.uid) return;
+
+      setNetworkError(null);
+
+      // Offline handling (no internet)
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        setNetworkError('Tidak ada internet. Periksa koneksi lalu coba lagi.');
+        return;
+      }
+
+      setCrudBusy(true);
+      setLoadingTaskId(taskId);
+
+      await taskService.saveUserTaskCompletion(currentUser.uid, taskId);
+
+      setLoadingTaskId(null);
+      setCrudBusy(false);
+    } catch (error) {
+      console.error('Error updating task completion:', error);
+      setNetworkError('Gagal mengubah status. Coba lagi nanti.');
+      setLoadingTaskId(null);
+      setCrudBusy(false);
+    }
+  };
+
   // --- FILTER & SEARCH LOGIC ---
   const filteredTasks = tasks
     .filter(task => {
+      const isDone = completedTaskIds.includes(task.id);
       const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.matkul.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.lecturer.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPriority = filterPriority === 'All' || task.priority === filterPriority;
-      const matchesStatus = filterStatus === 'All' || task.status === filterStatus;
+
+      // Map boolean -> task UI status ("Selesai" / "Belum")
+      const statusValue = isDone ? 'Selesai' : 'Belum';
+      const matchesStatus = filterStatus === 'All' || statusValue === filterStatus;
+
       return matchesSearch && matchesPriority && matchesStatus;
     })
     .sort((a, b) => {
@@ -139,12 +206,34 @@ export default function UserTaskList() {
 
   // --- STATISTICS ---
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.status === 'Selesai').length;
-  const highPriorityTasks = tasks.filter(t => t.priority === 'High' && t.status !== 'Selesai').length;
-  const urgentTasks = tasks.filter(t => (isDeadlineClose(t.deadline) || isDeadlinePassed(t.deadline)) && t.status !== 'Selesai').length;
+  const completedTasks = tasks.filter(t => completedTaskIds.includes(t.id)).length;
+  const highPriorityTasks = tasks.filter(t => t.priority === 'High' && !completedTaskIds.includes(t.id)).length;
+  const urgentTasks = tasks.filter(
+    t => (isDeadlineClose(t.deadline) || isDeadlinePassed(t.deadline)) && !completedTaskIds.includes(t.id)
+  ).length;
 
   return (
     <div className="w-full space-y-8 pb-16">
+      {networkError && (
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl px-4 py-3 shadow-sm flex items-start gap-3">
+            <span className="text-rose-600 font-black">!</span>
+            <div className="text-xs font-bold">
+              {networkError}
+              <div className="text-[10px] font-semibold text-rose-700 mt-1">Status tugas tidak berubah.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {crudBusy && (
+        <div className="fixed inset-0 z-[10000] bg-transparent flex items-center justify-center">
+          <div className="rounded-2xl px-6 py-4 bg-transparent border border-transparent shadow-none">
+            <Loading />
+            <p className="text-xs font-black text-slate-700 mt-3 text-center">Memperbarui status tugas...</p>
+          </div>
+        </div>
+      )}
       {/* --- HEADER --- */}
       <div className="border-b border-slate-100 pb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -289,7 +378,7 @@ export default function UserTaskList() {
           {filteredTasks.map((task) => {
             const isHigh = task.priority === 'High';
             const isMed = task.priority === 'Medium';
-            const isDone = task.status === 'Selesai';
+            const isDone = completedTaskIds.includes(task.id);
             const isClose = isDeadlineClose(task.deadline);
             const isPassed = isDeadlinePassed(task.deadline);
 
@@ -352,35 +441,64 @@ export default function UserTaskList() {
                   </div>
                 </div>
 
-                {/* Footer: Publisher Info */}
-                <div className="border-t border-slate-100 pt-3 mt-4 flex items-center gap-2.5">
-                  {/* Publisher Avatar */}
-                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 shadow-xs flex-shrink-0 bg-slate-100">
-                    {task.publisherInfo?.avatar ? (
-                      <img
-                        src={task.publisherInfo.avatar}
-                        alt={task.publisherInfo.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div style={{ display: task.publisherInfo?.avatar ? 'none' : 'flex' }} className="w-full h-full items-center justify-center bg-gradient-to-br from-purple-400 to-indigo-400 text-white text-xs font-bold">
-                      {task.publisherInfo?.name?.charAt(0) || 'A'}
+                {/* Footer: Publisher Info & Complete Button */}
+                <div className="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    {/* Publisher Avatar */}
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 shadow-xs flex-shrink-0 bg-slate-100">
+                      {task.publisherInfo?.avatar ? (
+                        <img
+                          src={task.publisherInfo.avatar}
+                          alt={task.publisherInfo.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div style={{ display: task.publisherInfo?.avatar ? 'none' : 'flex' }} className="w-full h-full items-center justify-center bg-gradient-to-br from-purple-400 to-indigo-400 text-white text-xs font-bold">
+                        {task.publisherInfo?.name?.charAt(0) || 'A'}
+                      </div>
+                    </div>
+
+                    {/* Publisher Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] font-bold text-slate-700 truncate">
+                        {task.publisherInfo?.name || task.publisher || 'Admin'}
+                      </div>
+                      <div className="text-[8px] text-slate-400">
+                        {task.publisherInfo?.role || 'Admin'} • {formatPublishTime(task.createdAt)}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Publisher Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[9px] font-bold text-slate-700 truncate">
-                      {task.publisherInfo?.name || task.publisher || 'Admin'}
-                    </div>
-                    <div className="text-[8px] text-slate-400">
-                      {task.publisherInfo?.role || 'Admin'} • {formatPublishTime(task.createdAt)}
-                    </div>
-                  </div>
+                  {/* Complete Button */}
+                  <button
+                    onClick={() => handleCompleteTask(task.id)}
+                    disabled={loadingTaskId === task.id}
+                    className={`flex-shrink-0 px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-200 flex items-center gap-1.5 ${
+                      isDone
+                        ? 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                    } ${loadingTaskId === task.id ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md'}`}
+                  >
+                    {loadingTaskId === task.id ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                      </>
+                    ) : isDone ? (
+                      <>
+                        <Check size={14} />
+                        Selesai
+                      </>
+                    ) : (
+                      <>
+                        <Check size={14} />
+                        Selesai
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             );

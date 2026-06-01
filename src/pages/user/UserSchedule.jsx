@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Search, Calendar, Clock, MapPin, User, 
-  Filter, Trash2, Edit3, Loader2, X, CheckCircle, 
+  Search, Calendar, Clock, MapPin, User, 
+  Filter, Loader2, CheckCircle, 
   BookOpen, Layers, Monitor, SlidersHorizontal, Info, AlertCircle
 } from 'lucide-react';
-import { scheduleService } from '../services/firebase'; // Pastikan service ini sudah Anda buat/sesuaikan
+import { scheduleService } from '../../services/firebase'; // Pastikan service ini sudah Anda buat/sesuaikan
 
 /**
  * Pakai urutan yang sama persis seperti di src/pages/Tasks.jsx
@@ -54,19 +54,6 @@ export default function Schedules() {
   // --- STATE MANAGEMENT ---
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Form States
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentId, setCurrentId] = useState(null);
-  const [matkul, setMatkul] = useState('');
-  const [lecturer, setLecturer] = useState('');
-  const [hari, setHari] = useState('Senin');
-  const [jamMulai, setJamMulai] = useState('');
-  const [jamSelesai, setJamSelesai] = useState('');
-  const [ruangan, setRuangan] = useState('');
-  const [jenisKelas, setJenisKelas] = useState('Offline');
 
   // UI Filter & Search States
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,84 +103,6 @@ export default function Schedules() {
   
   const currentDayName = new Date().toLocaleDateString('id-ID', { weekday: 'long' });
   const jadwalHariIniCount = schedules.filter(s => s.hari?.toLowerCase() === currentDayName?.toLowerCase()).length;
-
-  // --- CRUD HANDLERS ---
-  const openAddModal = () => {
-    setIsEditing(false);
-    setCurrentId(null);
-    setMatkul('');
-    setLecturer('');
-    setHari('Senin');
-    setJamMulai('');
-    setJamSelesai('');
-    setRuangan('');
-    setJenisKelas('Offline');
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (sch) => {
-    setIsEditing(true);
-    setCurrentId(sch.id);
-    setMatkul(sch.matkul || '');
-    setLecturer(sch.lecturer || '');
-    setHari(sch.hari || 'Senin');
-    setJamMulai(sch.jamMulai || '');
-    setJamSelesai(sch.jamSelesai || '');
-    setRuangan(sch.ruangan || '');
-    setJenisKelas(sch.jenisKelas || 'Offline');
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!matkul || !lecturer || !jamMulai || !jamSelesai || !ruangan) {
-      showToast('Mohon lengkapi parameter jadwal kuliah wajib!', 'error');
-      return;
-    }
-
-    setSubmitting(true);
-    const selectedMatkulObj = MATKUL_DATA.find(m => m.name === matkul);
-    const targetSks = selectedMatkulObj ? selectedMatkulObj.sks : 3;
-
-    const scheduleData = {
-      matkul,
-      lecturer,
-      hari,
-      jamMulai,
-      jamSelesai,
-      ruangan,
-      jenisKelas,
-      sks: targetSks,
-      updatedAt: new Date()
-    };
-
-    try {
-      if (isEditing) {
-        if (scheduleService?.updateSchedule) await scheduleService.updateSchedule(currentId, scheduleData);
-        showToast('Jadwal perkuliahan berhasil diperbarui!');
-      } else {
-        if (scheduleService?.addSchedule) await scheduleService.addSchedule({ ...scheduleData, createdAt: new Date() });
-        showToast('Jadwal baru berhasil dipublikasikan ke kalender planner!');
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error(error);
-      showToast('Gagal memproses data jadwal.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (confirm('Apakah Anda yakin ingin menghapus jadwal kuliah ini dari planner?')) {
-      try {
-        if (scheduleService?.deleteSchedule) await scheduleService.deleteSchedule(id);
-        showToast('Jadwal berhasil dihapus permanen.', 'success');
-      } catch (error) {
-        showToast('Gagal menghapus jadwal.', 'error');
-      }
-    }
-  };
 
   // --- FILTER & SEARCH PROCESSING ---
   const filteredSchedules = schedules.filter(sch => {
@@ -248,13 +157,6 @@ export default function Schedules() {
             <span className="text-[10px] uppercase font-black tracking-wider text-cyan-400">Kalender Hari Ini</span>
             <span className="text-xs font-bold text-red-700 mt-0.5">{todayFormatted}</span>
           </div>
-          <button
-            onClick={openAddModal}
-            className="px-5 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-100 flex items-center justify-center gap-2 active:scale-98 transition-all"
-          >
-            <Plus size={16} />
-            Tambah Jadwal Baru
-          </button>
         </div>
       </div>
 
@@ -440,183 +342,16 @@ export default function Schedules() {
                   </div>
                 </div>
 
-                {/* Footer Card: Info Bobot SKS & Tombol Aksi */}
-                <div className="bg-slate-50/70 border-t border-slate-100/80 px-4 py-3 flex justify-between items-center">
+                {/* Footer Card: Info Bobot SKS */}
+                <div className="bg-slate-50/70 border-t border-slate-100/80 px-4 py-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
                     Bobot: {sch.sks || 3} SKS
                   </span>
-                  
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditModal(sch)}
-                      className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                      title="Ubah Jadwal"
-                    >
-                      <Edit3 size={13} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(sch.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                      title="Hapus Agenda"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
                 </div>
 
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* --- MODAL POPUP METRIC INPUT (BACKDROP GLASSMORPHISM BLUR) --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
-          <div className="bg-white w-full max-w-md rounded-3xl border border-slate-100 shadow-2xl overflow-hidden transform transition-all max-h-[90vh] overflow-y-auto">
-            
-            {/* Header Form Popup */}
-            <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-black flex items-center gap-2">
-                  <Calendar size={15} className="text-indigo-400" />
-                  {isEditing ? 'Ubah Agenda Kuliah' : 'Tambah Agenda Kuliah'}
-                </h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">Konfigurasi sinkronisasi jadwal mingguan mahasiswa.</p>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} className="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-slate-300">
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* Form Fields Body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              
-              {/* Mata Kuliah Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">Mata Kuliah *</label>
-                <select
-                  value={matkul}
-                  onChange={(e) => {
-                    const nextMatkul = e.target.value;
-                    setMatkul(nextMatkul);
-
-                    const idx = MATKUL_LIST.indexOf(nextMatkul);
-                    const nextLecturer = idx >= 0 && idx < DOSEN_LIST.length ? DOSEN_LIST[idx] : '';
-                    setLecturer(nextLecturer);
-                  }}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
-                >
-                  <option value="">Pilih Mata Kuliah Terdaftar</option>
-                  {MATKUL_DATA.map((m, idx) => <option key={idx} value={m.name}>{m.name} ({m.sks} SKS)</option>)}
-                </select>
-              </div>
-
-              {/* Dosen Option Dropdown */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">Dosen Pengampu *</label>
-                <select
-                  value={lecturer}
-                  onChange={(e) => setLecturer(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
-                >
-                  <option value="">Pilih Dosen Terdaftar</option>
-                  {DOSEN_LIST.map((d, idx) => <option key={idx} value={d}>{d}</option>)}
-                </select>
-              </div>
-
-              {/* Day / Hari Dropdown */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">Hari *</label>
-                <select
-                  value={hari}
-                  onChange={(e) => setHari(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all cursor-pointer"
-                >
-                  {HARI_LIST.map((h, idx) => <option key={idx} value={h}>{h}</option>)}
-                </select>
-              </div>
-
-              {/* Jam Grid Input */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Jam Mulai *</label>
-                  <input
-                    type="time"
-                    value={jamMulai}
-                    onChange={(e) => setJamMulai(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Jam Selesai *</label>
-                  <input
-                    type="time"
-                    value={jamSelesai}
-                    onChange={(e) => setJamSelesai(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              {/* Ruangan Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">Ruangan / Tautan Kelas *</label>
-                <input
-                  type="text"
-                  placeholder="E.g., Ruang Teori 4.3 atau Tautan Zoom..."
-                  value={ruangan}
-                  onChange={(e) => setRuangan(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
-                />
-              </div>
-
-              {/* Jenis Kelas Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 block">Metode Pembelajaran</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Offline', 'Online'].map((j) => (
-                    <button
-                      key={j}
-                      type="button"
-                      onClick={() => setJenisKelas(j)}
-                      className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-                        jenisKelas === j
-                          ? 'bg-slate-900 border-slate-950 text-white ring-2 ring-slate-900/10'
-                          : 'bg-slate-50/50 border-slate-100 text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      {j}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons Modal Footer */}
-              <div className="pt-4 flex justify-end gap-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={`px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-md flex items-center gap-2 transition-all disabled:opacity-50 ${
-                    isEditing 
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-100' 
-                      : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-indigo-100'
-                  }`}
-                >
-                  {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
-                  {isEditing ? 'Simpan Pembaruan' : 'Publish Jadwal'}
-                </button>
-              </div>
-
-            </form>
-          </div>
         </div>
       )}
 

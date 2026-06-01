@@ -3,7 +3,7 @@ import {
   RotateCcw, Search, Filter, Loader2, AlertTriangle, Check, 
   Trash2, Users, Award, Clock, Zap
 } from 'lucide-react';
-import { taskService, userService, quizService } from '../services/firebase';
+import { taskService, userService, quizService } from '../../services/firebase';
 
 export default function ResetQuizScores() {
   const [users, setUsers] = useState([]);

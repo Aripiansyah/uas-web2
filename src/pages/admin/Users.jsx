@@ -4,7 +4,7 @@ import {
   Trash2, Edit3, Loader2, Key, Eye, EyeOff, 
   Filter, AlertTriangle, UserCheck, UserX, IdCard
 } from 'lucide-react';
-import { userService } from '../services/firebase';
+import { userService } from '../../services/firebase';
 
 export default function Users() {
   // --- STATE MANAGEMENT ---

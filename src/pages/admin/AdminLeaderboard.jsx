@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, RotateCcw, AlertCircle, Loader2 } from 'lucide-react';
-import { userService, quizService } from '../services/firebase';
-import Toast from '../components/Toast';
+import { userService, quizService } from '../../services/firebase';
+import Toast from '../../components/Toast';
 
 export default function AdminLeaderboard() {
   const [users, setUsers] = useState([]);

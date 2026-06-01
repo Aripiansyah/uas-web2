@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Star, Award, BarChart2, Shield, Mail, ChevronRight, Camera, Key } from 'lucide-react';
-import { db, quizService } from '../services/firebase';
+import { db, quizService } from '../../services/firebase';
 import { doc, onSnapshot, collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 export default function UserProfile() {
