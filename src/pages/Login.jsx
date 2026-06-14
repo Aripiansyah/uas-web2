@@ -96,16 +96,16 @@ export default function Login() {
         >
           <div className="flex items-center gap-3 bg-white/5 border border-white/10 w-max px-4 py-2 rounded-full backdrop-blur-md mb-8">
             <Sparkles className="w-5 h-5 text-cyan-400" />
-            <span className="text-slate-300 text-sm font-medium tracking-wide">SaaS Platform v2.0</span>
+            <span className="text-slate-300 text-sm font-medium tracking-wide">Classify v2.0</span>
           </div>
-          <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-6 leading-tight">
-            Elevate Your <br />
+          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-6 leading-tight">
+            TASK APLICATION <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-teal-300">
-              Productivity.
+              TIF PK 23.
             </span>
           </h1>
           <p className="text-slate-400 text-lg max-w-md leading-relaxed">
-            Masuk ke ekosistem pintar kami untuk mengelola, menganalisis, dan mempercepat pertumbuhan performa Anda.
+            Tugasmu menentukan kompetensi dan masa depanmu.
           </p>
         </motion.div>
 
@@ -134,13 +134,13 @@ export default function Login() {
             {/* Header Mobile Only */}
             <div className="lg:hidden mb-8 text-center">
               <h2 className="text-3xl font-black text-white mb-2">Selamat Datang</h2>
-              <p className="text-slate-400 text-sm">Masuk untuk melanjutkan ke dashboard.</p>
+              <p className="text-slate-400 text-sm">Masuk untuk melanjutkan.</p>
             </div>
 
             {/* Header Desktop */}
             <div className="hidden lg:block mb-10">
               <h2 className="text-3xl font-bold text-white mb-2">Sign In</h2>
-              <p className="text-slate-400 text-sm">Selamat datang kembali! Silakan masukkan detail Anda.</p>
+              <p className="text-slate-400 text-sm">Masukan NIM dan password untuk melanjutkan.</p>
             </div>
 
             {/* Error Message */}
@@ -246,7 +246,7 @@ export default function Login() {
               <p className="text-sm text-slate-400">
                 Belum punya akun?{' '}
                 <a
-                  href="/registrasi"
+                  href="/Registrasi"
                   className="text-cyan-400 font-semibold hover:text-teal-300 transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-[2px] after:bg-teal-300 hover:after:w-full after:transition-all after:duration-300"
                 >
                   Daftar

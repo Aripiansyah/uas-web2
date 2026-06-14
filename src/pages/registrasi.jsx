@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDocs, query, collection, where, addDoc } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { Sparkles, User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
 import { db } from "../services/firebase";
 
 export default function Registrasi() {
@@ -10,6 +12,7 @@ export default function Registrasi() {
   const [nim, setNim] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [networkError, setNetworkError] = useState("");
@@ -91,85 +94,206 @@ export default function Registrasi() {
   };
 
   return (
-    <div className="min-h-screen bg-[#ffffff] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-lg p-6">
-        <h1 className="text-2xl font-extrabold text-slate-900 mb-1">Registrasi</h1>
-        <p className="text-sm text-slate-500 mb-6">Buat akun untuk masuk ke dashboard.</p>
+    <div className="min-h-screen h-screen bg-[#ffffff] flex overflow-hidden font-sans selection:bg-cyan-500">
 
-        {networkError && (
-          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-700 text-sm font-bold">
-            {networkError}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-rose-700 text-sm font-bold">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">Nama Lengkap</label>
-            <input
-              value={namaLengkap}
-              onChange={(e) => setNamaLengkap(e.target.value)}
-              type="text"
-              placeholder="Masukkan nama lengkap"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">NIM</label>
-            <input
-              value={nim}
-              onChange={(e) => setNim(e.target.value)}
-              type="text"
-              placeholder="Masukkan NIM"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">Password</label>
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              placeholder="Buat password"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">Konfirmasi Password</label>
-            <input
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
-              type="password"
-              placeholder="Ulangi password"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:bg-white transition-all"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={!canSubmit || loading}
-            className="w-full mt-2 py-3 rounded-xl bg-slate-900 text-white text-sm font-extrabold hover:opacity-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Membuat akun..." : "Daftar"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className="w-full py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-all"
-          >
-            Kembali ke Login
-          </button>
-        </form>
+      {/* Background Animated Blobs */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 90, 0],
+            opacity: [0.3, 0.2, 0.3]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-white/30 blur-[120px]"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.5, 1],
+            rotate: [0, -90, 0],
+            opacity: [0.2, 0.3, 0.2]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-cyan-500/20 blur-[120px]"
+        />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
       </div>
+
+      {/* LEFT PANEL - Branding (Hidden on Mobile) */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-between p-16 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 w-max px-3 py-1.5 rounded-full backdrop-blur-md mb-4">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span className="text-slate-300 text-xs font-medium tracking-wide">SaaS Platform v2.0</span>
+          </div>
+          <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-3 leading-tight">
+            Join Our{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-teal-300">
+              Community.
+            </span>
+          </h1>
+          <p className="text-slate-400 text-sm max-w-sm leading-relaxed">
+            Daftar sekarang dan mulai perjalanan Anda dalam ekosistem pintar kami.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+          className="absolute bottom-8 flex items-center gap-4 text-slate-500 text-xs"
+        >
+          <p>© 2026 Crafted for Sahrul Aripiansyah</p>
+          <p>All rights reserved.</p>
+        </motion.div>
+      </div>
+
+      {/* RIGHT PANEL - Registration Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
+          className="w-full max-w-sm"
+        >
+          {/* Glassmorphism Card */}
+          <div className="bg-white-500 border border-green-800 p-6 rounded-3xl shadow-[0_0_40px_rgba(8,112,184,0.1)]">
+
+            {/* Header Mobile Only */}
+            <div className="lg:hidden mb-4 text-center">
+              <h2 className="text-2xl font-black text-white mb-1">Buat Akun</h2>
+              <p className="text-slate-400 text-xs">Daftar untuk memulai.</p>
+            </div>
+
+            {/* Header Desktop */}
+            <div className="hidden lg:block mb-5">
+              <h2 className="text-2xl font-bold text-white mb-1">Sign Up</h2>
+              <p className="text-slate-400 text-xs">Buat akun baru untuk bergabung dengan platform kami.</p>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 py-2 rounded-xl mb-4 flex items-center gap-2 text-xs"
+              >
+                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0"></div>
+                {error}
+              </motion.div>
+            )}
+
+            <form onSubmit={handleRegister} className="space-y-3">
+
+              {/* Nama Lengkap Input */}
+              <div className="space-y-1 group">
+                <label className="text-xs font-medium text-slate-300">Nama Lengkap</label>
+                <div className="relative flex items-center">
+                  <User className="absolute left-3 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-300 w-4 h-4" />
+                  <input
+                    value={namaLengkap}
+                    onChange={(e) => setNamaLengkap(e.target.value)}
+                    type="text"
+                    placeholder="Masukkan nama lengkap"
+                    className="w-full bg-slate-950/50 border border-slate-800 text-white placeholder-slate-500 rounded-xl py-2.5 pl-10 pr-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all duration-300 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* NIM Input */}
+              <div className="space-y-1 group">
+                <label className="text-xs font-medium text-slate-300">NIM</label>
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-3 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-300 w-4 h-4" />
+                  <input
+                    value={nim}
+                    onChange={(e) => setNim(e.target.value)}
+                    type="text"
+                    placeholder="Masukkan NIM Anda"
+                    className="w-full bg-slate-950/50 border border-slate-800 text-white placeholder-slate-500 rounded-xl py-2.5 pl-10 pr-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all duration-300 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1 group">
+                <label className="text-xs font-medium text-slate-300">Password</label>
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-3 text-slate-500 group-focus-within:text-purple-400 transition-colors duration-300 w-4 h-4" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Buat password"
+                    className="w-full bg-slate-950/50 border border-slate-800 text-white placeholder-slate-500 rounded-xl py-2.5 pl-10 pr-10 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all duration-300 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-slate-500 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Konfirmasi Password Input */}
+              <div className="space-y-1 group">
+                <label className="text-xs font-medium text-slate-300">Konfirmasi Password</label>
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-3 text-slate-500 group-focus-within:text-purple-400 transition-colors duration-300 w-4 h-4" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    placeholder="Ulangi password"
+                    className="w-full bg-slate-950/50 border border-slate-800 text-white placeholder-slate-500 rounded-xl py-2.5 pl-10 pr-10 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all duration-300 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <motion.button
+                whileHover={{ scale: 1.01, boxShadow: "0 0 20px rgba(34, 211, 238, 0.4)" }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={!canSubmit || loading}
+                className="w-full bg-gradient-to-r from-purple-600 via-cyan-500 to-teal-400 text-white font-semibold py-2.5 rounded-xl hover:opacity-90 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 group relative overflow-hidden text-sm"
+              >
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"></div>
+
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Daftar</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </motion.button>
+            </form>
+
+            {/* Footer */}
+            <div className="mt-4 pt-4 border-t border-slate-800 text-center">
+              <p className="text-xs text-slate-400">
+                Sudah punya akun?{' '}
+                <a
+                  href="/Login"
+                  className="text-cyan-400 font-semibold hover:text-teal-300 transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-[2px] after:bg-teal-300 hover:after:w-full after:transition-all after:duration-300"
+                >
+                  Masuk
+                </a>
+              </p>
+            </div>
+
+          </div>
+        </motion.div>
+      </div>
+
     </div>
   );
 }

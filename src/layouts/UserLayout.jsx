@@ -31,7 +31,6 @@ export default function UserLayout() {
 
   const menuItems = [
     { path: '/user-dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { path: '/announcements', name: 'Pengumuman', icon: MessageSquare },
     { path: '/user-task-list', name: 'Daftar Tugas', icon: BookOpen },
     { path: '/user-schedule', name: 'Jadwal Kuliah', icon: Calendar },
     { path: '/student-quizzes', name: 'Quiz', icon: ClipboardList },

@@ -6,34 +6,6 @@ import {
 } from 'lucide-react';
 import { scheduleService } from '../../services/firebase'; // Pastikan service ini sudah Anda buat/sesuaikan
 
-/**
- * Pakai urutan yang sama persis seperti di src/pages/Tasks.jsx
- * supaya:
- *  - Matkul index ke-n => Dosen index ke-n (otomatis)
- *  - Tampilan kartu menampilkan nama dosen
- */
-
-// Konfigurasi Pilihan Mata Kuliah (urutan sinkron)
-const MATKUL_LIST = [
-  "Pemrograman Web 2",
-  "Android Development Associate (ADA)",
-  "Metodologi Penelitian Informatika",
-  "Penambangan Data",
-  "Pengujian Perangkat Lunak",
-  "Sistem Mikrokontroler",
-  "Teknik Penulisan Literatur Ilmiah"
-];
-
-// Konfigurasi Pilihan Dosen Tetap (urutan sinkron)
-const DOSEN_LIST = [
-  "Muhammad Reksa Ariansyah, M.Kom.",
-  "Andri Nugraha Ramdhon, S.Kom., M.Kom.",
-  "Muhammad Shalahuddin, ST., MT.",
-  "Iis Ismawati, S.Kom., M.Kom.",
-  "Brian Damastu, M.Kom.",
-  "Muchamad Rusdan, ST., MT.",
-  "Muhamad Fajar Rizkia, M.Pd."
-];
 
 // Konfigurasi Pilihan Mata Kuliah & SKS bawaan (untuk warna di kartu & input SKS)
 const MATKUL_DATA = [

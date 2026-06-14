@@ -40,7 +40,6 @@ export default function DashboardLayout() {
 
   const menuItems = [
     { path: '/', name: 'Dashboard', icon: LayoutDashboard },
-    { path: '/announcements', name: 'Pengumuman', icon: MessageSquare },
     { path: '/schedule', name: 'Jadwal Kuliah', icon: CalendarDays },
     { path: '/tasks', name: 'Tambah Tugas', icon: ClipboardList },
     { path: '/users', name: 'Kelola User', icon: Users },
