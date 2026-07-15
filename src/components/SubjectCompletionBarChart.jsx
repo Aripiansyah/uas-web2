@@ -11,8 +11,8 @@ import {
 } from "recharts";
 
 const COLORS = {
-  completed: "#8b5cf6", // purple accent
-  pending: "#06b6d4", // cyan accent
+  completed: "#8b5cf6",
+  pending: "#06b6d4",
   pendingMuted: "#0ea5e9",
 };
 
@@ -21,16 +21,11 @@ function getTaskSubject(task) {
 }
 
 function isTaskCompleted(task, completedTaskIds) {
-  // If we were given an explicit completion id list (user dashboard),
-  // use it as the source of truth even if it's empty.
   if (Array.isArray(completedTaskIds)) {
     return completedTaskIds.includes(task?.id);
   }
-
-  // Admin tasks use `isCompleted`
   if (task?.isCompleted === true) return true;
 
-  // Fallback: if task has status fields
   if (typeof task?.status === "string") return task.status === "Selesai";
 
   return false;
@@ -71,7 +66,6 @@ export default function SubjectCompletionBarChart({
     const completedSum = sorted.reduce((sum, e) => sum + e.completed, 0);
     const pendingSum = sorted.reduce((sum, e) => sum + e.pending, 0);
 
-    // Recompute rate (optional, for tooltip)
     return {
       data: sorted.map((e) => ({
         ...e,

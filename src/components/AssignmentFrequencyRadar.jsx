@@ -10,9 +10,9 @@ import {
 } from 'recharts';
 
 const COLORS = {
-  high: '#ff0000', // red accent
-  medium: '#06b6d4', // cyan accent
-  low: '#14b8a6', // aqua/teal accent
+  high: '#ff0000',
+  medium: '#06b6d4',
+  low: '#14b8a6',
 };
 
 const SUBJECT_AXES = [
@@ -29,30 +29,14 @@ function getTaskSubject(task) {
   return task?.matkul || task?.course || "Belum Ada";
 }
 
-// Map nama mata kuliah di database ke label sumbu radar yang diminta.
-// Tujuannya: supaya count dari DB masuk ke axes yang benar.
 function normalizeSubjectToAxis(subjectRaw) {
   const s = String(subjectRaw || "").trim().toLowerCase();
-
-  // Web 2 / Pemrograman Web 2
   if (s.includes("web") && s.includes("2")) return "Web 2";
-
-  // ADA
   if (s.includes("(ada)") || s.includes(" ada") || s.includes("ada")) return "(ADA)";
-
-  // Metopen (Metodologi Penelitian Informatika)
   if (s.includes("metopen") || s.includes("metodologi") || s.includes("penelitian")) return "Metopen";
-
-  // Data Mining
   if (s.includes("data mining") || s.includes("penambangan data")) return "Data Mining";
-
-  // PPL (Pengujian Perangkat Lunak)
   if (s.includes("ppl") || s.includes("pengujian") || s.includes("perangkat lunak")) return "PPL";
-
-  // Sistem Mikrokontroler
   if (s.includes("sistem mikrokontroler") || s.includes("mikrokontroler")) return "Sistem Mikrokontroler";
-
-  // TPLI (Teknik Penulisan Literatur Ilmiah)
   if (s.includes("tpli") || s.includes("penulisan") || s.includes("literatur") || s.includes("ilmiah")) return "TPLI";
 
   return null;
@@ -69,7 +53,6 @@ function pickRadarAxes(entries, maxAxes, averageCount) {
   const sortedDesc = [...entries].sort((a, b) => b.count - a.count);
   const sortedAsc = [...entries].sort((a, b) => a.count - b.count);
 
-  // Represent the 3 categories across the limited radar axes
   const highN = Math.max(1, Math.round(maxAxes / 3));
   const lowN = Math.max(1, Math.round(maxAxes / 3));
   const moderateN = Math.max(1, maxAxes - highN - lowN);
@@ -92,7 +75,6 @@ function pickRadarAxes(entries, maxAxes, averageCount) {
 }
 
 function computeHighMediumLow(entries) {
-  // entries: [{ subject, count }]
   const n = entries.length;
   if (n === 0) return { high: new Set(), low: new Set() };
 
@@ -122,7 +104,6 @@ export default function AssignmentFrequencyRadar({ tasks = [] }) {
     average,
     maxCount,
   } = useMemo(() => {
-    // Force radar axes always exist (even if count=0)
     const subjectCountMap = new Map(SUBJECT_AXES.map((axis) => [axis, 0]));
 
     for (const task of tasks) {
@@ -157,10 +138,6 @@ export default function AssignmentFrequencyRadar({ tasks = [] }) {
 
     const selected = pickRadarAxes(allEntries, 8, averageCount);
 
-    // Classify within the radar axes so we always get:
-    // - Frequently Assigned (highest counts)
-    // - Moderately Assigned (middle/average-ish counts)
-    // - Rarely Assigned (lowest counts)
     const sortedSelected = [...selected].sort((a, b) => b.count - a.count);
     const highN = Math.max(1, Math.round(sortedSelected.length / 3));
     const lowN = Math.max(1, Math.round(sortedSelected.length / 3));

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, BarChart, Bar, Line, Legend, Tooltip, CartesianGrid, XAxis, YAxis, LabelList } from 'recharts';
 import { CheckCircle2, Clock, BookOpen, User, Calendar, Award, Trash2, Trophy, Medal } from 'lucide-react';
-import { taskService, userService, scheduleService, quizService } from '../../services/firebase';
+import { taskService, userService, scheduleService, quizService } from '../../services/api';
 import Toast from '../../components/Toast';
 import { useNavigate } from 'react-router-dom';
 import UserTaskAnalytics from '../../components/UserTaskAnalytics';

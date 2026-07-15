@@ -8,7 +8,7 @@ import {
   ArrowUpDown,
   Check
 } from 'lucide-react';
-import { quizService, userService } from '../../services/firebase';
+import { quizService, userService } from '../../services/api';
 import Toast from '../../components/Toast';
 
 export default function ResetScore() {

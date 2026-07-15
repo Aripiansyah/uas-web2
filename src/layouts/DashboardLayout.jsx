@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link, Outlet } from "react-router-dom";
 import { LayoutDashboard, CalendarDays, ClipboardList, Users, LogOut, Menu, X, Camera, Check, GraduationCap, HelpCircle, RotateCcw } from "lucide-react";
-import { userService } from "../services/firebase";
+import { userService } from "../services/api";
 import { MessageSquare } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -9,34 +9,27 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
-  // State Profil Pengguna Aktif (Simulasi admin utama)
   const [currentUser, setCurrentUser] = useState({
-    id: 'admin_utama_01', // ID unik dokumen di Firestore koleksi 'users'
+    id: 'admin_utama_01',
     name: 'Administrator Utama',
     avatarUrl: ''
   });
-  
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newUsername, setNewUsername] = useState(currentUser.name);
   const [uploading, setUploading] = useState(false);
 
-  // Mengambil data user aktif dari Firestore saat load
   useEffect(() => {
-    // Trik: Jika dihubungkan auth asli, ID ini dinamis. Untuk sekarang, 
-    // kita pakai ID tetap agar profil 'Administrator Utama' tersimpan permanen.
-    const unsubscribe = userService.subscribeUsers((users) => {
-      const activeUser = users.find(u => u.id === currentUser.id);
-      if (activeUser) {
-        setCurrentUser({
-          id: activeUser.id,
-          name: activeUser.name,
-          avatarUrl: activeUser.avatarUrl || ''
-        });
-        setNewUsername(activeUser.name);
-      }
-    });
-    return () => unsubscribe();
-  }, [currentUser.id]);
+    const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (storedUser) {
+      setCurrentUser({
+        id: storedUser.uid || storedUser.id,
+        name: storedUser.name || 'Administrator',
+        avatarUrl: storedUser.avatarUrl || ''
+      });
+      setNewUsername(storedUser.name || '');
+    }
+  }, []);
 
   const menuItems = [
     { path: '/', name: 'Dashboard', icon: LayoutDashboard },
@@ -47,11 +40,10 @@ export default function DashboardLayout() {
     { path: '/admin/reset-score', name: 'Reset Skor Quiz', icon: RotateCcw },
   ];
 
-  // Fungsi simpan perubahan profil ke Firestore
   const saveProfileChanges = async () => {
     if (!newUsername.trim()) return;
     try {
-      await userService.updateUser(currentUser.id, { 
+      await userService.updateUser(currentUser.id, {
         name: newUsername,
         avatarUrl: currentUser.avatarUrl
       });
@@ -69,12 +61,12 @@ export default function DashboardLayout() {
     try {
       setUploading(true);
       const downloadUrl = await userService.uploadAvatar(currentUser.id, file);
-      
-      await userService.updateUser(currentUser.id, { 
-        name: currentUser.name, 
-        avatarUrl: downloadUrl 
+
+      await userService.updateUser(currentUser.id, {
+        name: currentUser.name,
+        avatarUrl: downloadUrl
       });
-      
+
       alert("Foto profil berhasil diperbarui!");
     } catch (error) {
       alert("Gagal mengunggah foto profil.");
@@ -103,8 +95,8 @@ export default function DashboardLayout() {
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="w-full flex flex-col flex-1 overflow-y-auto">
-          
-          {/* SECTION PROFIL DI ATAS (MENGGANTIKAN LOGO & EDU TASK DASH) */}
+
+          {/* SECTION PROFIL DI ATAS */}
           <div className="bg-white border-b border-slate-200 p-6 flex flex-col items-center text-center relative w-full mb-6">
             {/* Avatar Area */}
             <div className="relative w-20 h-20 mb-4 flex-shrink-0">
@@ -120,16 +112,16 @@ export default function DashboardLayout() {
                 <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={uploading} />
               </label>
             </div>
-            
+
             {uploading && <span className="text-[10px] text-indigo-600 font-bold animate-pulse mb-1">Uploading...</span>}
 
             {/* Nama & Edit */}
             {isEditingProfile ? (
               <div className="flex items-center gap-1.5 w-full mt-1">
-                <input 
-                  type="text" 
-                  value={newUsername} 
-                  onChange={(e) => setNewUsername(e.target.value)} 
+                <input
+                  type="text"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
                   className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-slate-200 rounded-lg text-center font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
                 <button onClick={saveProfileChanges} className="p-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 flex-shrink-0">
@@ -153,9 +145,8 @@ export default function DashboardLayout() {
               const isActive = location.pathname === item.path;
               return (
                 <Link key={item.path} to={item.path} onClick={() => setIsOpen(false)} className="w-full block">
-                  <span className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                    isActive ? 'text-indigo-600 bg-indigo-50/70' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}>
+                  <span className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${isActive ? 'text-indigo-600 bg-indigo-50/70' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}>
                     <Icon size={18} className={`${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
                     {item.name}
                   </span>
@@ -167,9 +158,9 @@ export default function DashboardLayout() {
 
         {/* Bagian Bawah: Tombol Logout */}
         <div className="px-6 pb-6 mt-auto">
-          <button 
-            onClick={() => { 
-               {
+          <button
+            onClick={() => {
+              {
                 localStorage.removeItem('currentUser');
                 navigate('/login');
               }

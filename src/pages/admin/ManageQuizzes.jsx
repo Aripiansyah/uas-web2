@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, HelpCircle, Trash2, Loader2, X, CheckCircle, Save, FileText } from 'lucide-react';
-import { db } from '../../services/firebase';
-import { collection, query, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { quizService } from '../../services/api';
 
 export default function ManageQuizzes() {
   const [quizzes, setQuizzes] = useState([]);
@@ -13,7 +12,7 @@ export default function ManageQuizzes() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Flutter');
   
-  // State List Pertanyaan Sementara (Sebelum di-save ke Firebase)
+  // State List Pertanyaan Sementara (sebelum di-save)
   const [questionsList, setQuestionsList] = useState([]);
 
   // Form Pertanyaan Satuan (Input Terisolasi)
@@ -27,9 +26,8 @@ export default function ManageQuizzes() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   useEffect(() => {
-    const q = query(collection(db, 'quizzes'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setQuizzes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const unsubscribe = quizService.subscribeQuizzes((items) => {
+      setQuizzes(items);
       setLoading(false);
     });
     return () => unsubscribe();
@@ -74,11 +72,10 @@ export default function ManageQuizzes() {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'quizzes'), {
+      await quizService.createQuiz({
         title,
         category,
-        questions: questionsList, // Menyimpan array berisi banyak pertanyaan sekaligus
-        createdAt: new Date()
+        questions: questionsList,
       });
       
       showToast('Bundel Paket Kuis Berhasil Diterbitkan!');
@@ -95,7 +92,7 @@ export default function ManageQuizzes() {
   const handleDelete = async (id) => {
     if (confirm('Hapus seluruh paket kuis ini beserta semua soal di dalamnya?')) {
       try {
-        await deleteDoc(doc(db, 'quizzes', id));
+        await quizService.deleteQuiz(id);
         showToast('Paket kuis berhasil dihapus.', 'success');
       } catch (error) {
         showToast('Gagal menghapus data.', 'error');

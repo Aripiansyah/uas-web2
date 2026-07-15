@@ -1,31 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { db } from '../services/firebase';
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  serverTimestamp,
-  Timestamp,
-  doc,
-  updateDoc,
-  deleteDoc
-} from 'firebase/firestore';
-
-function toMillis(ts) {
-  if (!ts) return 0;
-  if (typeof ts === 'number') return ts;
-  if (ts instanceof Timestamp) return ts.toMillis();
-  if (typeof ts?.toMillis === 'function') return ts.toMillis();
-  if (typeof ts?.seconds === 'number') return ts.seconds * 1000;
-  const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
-}
+import { announcementService } from '../services/api';
 
 function formatDate(ts) {
-  const ms = toMillis(ts);
-  if (!ms) return '';
-  const d = new Date(ms);
-  return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: '2-digit' });
+  if (!ts) return '';
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: '2-digit' });
 }
 
 export default function Announcement() {
@@ -49,14 +28,11 @@ export default function Announcement() {
   const [editBody, setEditBody] = useState('');
 
   useEffect(() => {
-    const q = collection(db, 'announcements');
-    const unsub = onSnapshot(q, (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      list.sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+    const unsubscribe = announcementService.subscribeAnnouncements((list) => {
       setAnnouncements(list);
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, []);
 
   const handleCreate = async (e) => {
@@ -67,10 +43,9 @@ export default function Announcement() {
     const trimmedBody = body.trim();
     if (!trimmedTitle || !trimmedBody) return;
 
-    await addDoc(collection(db, 'announcements'), {
+    await announcementService.addAnnouncement({
       title: trimmedTitle,
       body: trimmedBody,
-      createdAt: serverTimestamp(),
       createdBy: currentUser.uid || 'unknown'
     });
 
@@ -99,7 +74,7 @@ export default function Announcement() {
     const trimmedBody = editBody.trim();
     if (!trimmedTitle || !trimmedBody) return;
 
-    await updateDoc(doc(db, 'announcements', editingId), {
+    await announcementService.updateAnnouncement(editingId, {
       title: trimmedTitle,
       body: trimmedBody
     });
@@ -112,7 +87,7 @@ export default function Announcement() {
     const ok = window.confirm('Hapus pengumuman ini?');
     if (!ok) return;
 
-    await deleteDoc(doc(db, 'announcements', id));
+    await announcementService.deleteAnnouncement(id);
   };
 
   return (
@@ -228,9 +203,9 @@ export default function Announcement() {
                         </div>
                       )}
 
-                      {!isEditing && (
+                        {!isEditing && (
                         <p className="text-[11px] font-bold text-slate-500 mt-1">
-                          {formatDate(a.createdAt) || '—'}
+                          {formatDate(a.created_at) || '—'}
                         </p>
                       )}
                     </div>

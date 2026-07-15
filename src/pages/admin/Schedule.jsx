@@ -4,7 +4,7 @@ import {
   Filter, Trash2, Edit3, Loader2, X, CheckCircle, 
   BookOpen, Layers, Monitor, SlidersHorizontal, Info, AlertCircle
 } from 'lucide-react';
-import { scheduleService } from '../../services/firebase'; // Pastikan service ini sudah Anda buat/sesuaikan
+import { scheduleService } from '../../services/api';
 
 /**
  * Pakai urutan yang sama persis seperti di src/pages/Tasks.jsx
@@ -83,7 +83,7 @@ export default function Schedules() {
   // --- REALTIME DATA SYNC ---
   useEffect(() => {
     setLoading(true);
-    // Menggunakan fallback jika scheduleService belum di-setup penuh di firebase.js Anda
+    // Menggunakan scheduleService dari backend API
     if (scheduleService && scheduleService.subscribeSchedules) {
       const unsubscribe = scheduleService.subscribeSchedules((fetched) => {
         setSchedules(fetched);
@@ -91,7 +91,7 @@ export default function Schedules() {
       });
       return () => unsubscribe();
     } else {
-      // Data Mock-up Premium jika Firebase service Schedules belum di-deploy
+      // Data Mock-up Premium jika backend service Schedules belum siap
       setTimeout(() => {
         setSchedules([
           { id: '1', matkul: 'Pemrograman Mobile 2', lecturer: 'Budi Rahman, M.Kom', hari: 'Senin', jamMulai: '08:00', jamSelesai: '10:30', ruangan: 'Lab Komputer 3', jenisKelas: 'Offline', sks: 3 },

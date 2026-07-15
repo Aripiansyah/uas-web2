@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles, Check } from 'lucide-react';
-import { userService } from '../services/firebase';
+import { userService } from '../services/api';
+import logo1 from '../assets/332A1342.webp';
+import logo2 from '../assets/332A1348.webp';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -63,7 +65,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#ffffff] flex overflow-hidden font-sans selection:bg-cyan-500">
-      
+
       {/* Background Animated Blobs */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <motion.div 
@@ -94,11 +96,11 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 w-max px-4 py-2 rounded-full backdrop-blur-md mb-8">
-            <Sparkles className="w-5 h-5 text-cyan-400" />
+          <div className="flex items-center gap-3 bg-white/9 border border-white/10 w-max px-4 py-2 rounded-full backdrop-blur-md mb-8">
+            <Sparkles className="w-8 h-5 text-cyan-400"  />
             <span className="text-slate-300 text-sm font-medium tracking-wide">Classify v2.0</span>
           </div>
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-6 leading-tight">
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-6 leading-tight">
             TASK APLICATION <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-teal-300">
               TIF PK 23.
@@ -109,6 +111,13 @@ export default function Login() {
           </p>
         </motion.div>
 
+        <div className="flex flex-2 items-center gap-2">
+        <img 
+          src={logo1} 
+          alt="Classify Logo" 
+          className="w-50 h-full object-contain animate-pulse" // Efek berdenyut biar esteti
+        />
+        </div>
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

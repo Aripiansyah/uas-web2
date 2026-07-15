@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ResponsiveContainer, CartesianGrid, XAxis, YAxis, BarChart, Bar, Cell, Tooltip } from 'recharts';
 import { CheckCircle2, BookOpen, User, Calendar, Trash2, Trophy } from 'lucide-react';
-import { taskService, userService } from '../../services/firebase';
+import { taskService, userService } from '../../services/api';
 import AssignmentFrequencyRadar from '../../components/AssignmentFrequencyRadar';
 import SubjectCompletionBarChart from '../../components/SubjectCompletionBarChart';
 
@@ -25,7 +25,7 @@ export default function Dashboard() {
       const sortedUsers = users
         .map((u) => ({
           name: u.name || 'Anonymous',
-          points: u.totalPoints || 0,
+          points: u.total_points || u.totalPoints || 0,
         }))
         .sort((a, b) => b.points - a.points)
         .slice(0, 5);
@@ -37,15 +37,15 @@ export default function Dashboard() {
     const unsubscribeTasks = taskService.subscribeTasks((fetchedTasks) => {
       setTasks(fetchedTasks);
 
-      const completedCount = fetchedTasks.filter((t) => t.isCompleted).length;
+      const completedCount = fetchedTasks.filter((t) => t.isCompleted || t.is_completed).length;
       const urgentCount = fetchedTasks.filter(
-        (t) => !t.isCompleted && t.priority === 'High'
+        (t) => !(t.isCompleted || t.is_completed) && t.priority === 'High'
       ).length;
       const mediumCount = fetchedTasks.filter(
-        (t) => !t.isCompleted && t.priority === 'Medium'
+        (t) => !(t.isCompleted || t.is_completed) && t.priority === 'Medium'
       ).length;
       const lowCount = fetchedTasks.filter(
-        (t) => !t.isCompleted && t.priority === 'Low'
+        (t) => !(t.isCompleted || t.is_completed) && t.priority === 'Low'
       ).length;
 
       setSpeedData([

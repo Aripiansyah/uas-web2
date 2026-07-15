@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, ArrowRight, CheckCircle, Award, HelpCircle, Lock } from 'lucide-react';
-import { db, quizService } from '../../services/firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
-import { userService } from '../../services/firebase';
+import { quizService, userService } from '../../services/api';
 import Toast from '../../components/Toast';
 
 export default function StudentQuizzes() {
@@ -22,9 +20,8 @@ export default function StudentQuizzes() {
   const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
 
   useEffect(() => {
-    const q = query(collection(db, 'quizzes'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setQuizzes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const unsubscribe = quizService.subscribeQuizzes((items) => {
+      setQuizzes(items);
       setLoading(false);
     });
     return () => unsubscribe();
@@ -35,7 +32,7 @@ export default function StudentQuizzes() {
     if (!currentUser.uid) return;
     
     const unsubscribe = quizService.subscribeUserQuizCompletions(currentUser.uid, (completions) => {
-      const completedIds = completions.map(c => c.quizId);
+      const completedIds = completions.map(c => c.quiz_id || c.quizId);
       setCompletedQuizzes(completedIds);
     });
     
@@ -61,7 +58,7 @@ export default function StudentQuizzes() {
     if (!selectedAnswer) return;
 
     const currentQuestionObj = activeBundle.questions[currentQuestionIdx];
-    const isCorrect = selectedAnswer === currentQuestionObj.correctAnswer;
+    const isCorrect = selectedAnswer === (currentQuestionObj.correct_answer || currentQuestionObj.correctAnswer);
     const updatedLogs = [...answersLog, isCorrect];
     setAnswersLog(updatedLogs);
 

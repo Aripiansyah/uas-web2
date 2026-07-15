@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link, Outlet } from "react-router-dom";
 import { LayoutDashboard, ClipboardList, LogOut, Menu, X, GraduationCap, Calendar, User, Camera, Check, BookOpen } from "lucide-react";
-import { userService } from "../services/firebase";
+import { userService } from "../services/api";
 import { MessageSquare } from 'lucide-react';
 
 export default function UserLayout() {

@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDocs, query, collection, where, addDoc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { Sparkles, User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
-import { db } from "../services/firebase";
+import { userService } from "../services/api";
 
 export default function Registrasi() {
   const navigate = useNavigate();
@@ -56,32 +55,21 @@ export default function Registrasi() {
 
     setLoading(true);
     try {
-      // Check if NIM already exists
-      const q = query(collection(db, "users"), where("nim", "==", nim.trim()));
-      const existing = await getDocs(q);
-      if (!existing.empty) {
-        setError("NIM sudah terdaftar. Silakan login.");
-        return;
-      }
-
-      const docRef = await addDoc(collection(db, "users"), {
+      // Backend /api/auth/register sudah validasi duplikat NIM
+      const newUser = await userService.addUser({
         nim: nim.trim(),
         name: namaLengkap.trim(),
         role: "User",
-        password, // NOTE: app currently uses plain password comparison in loginUser()
+        password,
         avatarUrl: "",
-        totalPoints: 0,
-        quizzesCompleted: 0,
-        createdAt: new Date(),
       });
 
-      // Auto-login to connect register -> login flow
       const currentUser = {
-        uid: docRef.id,
-        nim: nim.trim(),
-        name: namaLengkap.trim(),
-        role: "User",
-        avatarUrl: "",
+        uid: newUser.uid,
+        nim: newUser.nim,
+        name: newUser.name,
+        role: newUser.role,
+        avatarUrl: newUser.avatarUrl || "",
       };
 
       localStorage.setItem("currentUser", JSON.stringify(currentUser));

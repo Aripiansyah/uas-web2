@@ -1,54 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
 import { Users, Loader2 } from 'lucide-react';
-import { db } from '../services/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { taskService, userService } from '../services/api';
 
 export default function UserTaskAnalytics() {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Dengarkan data seluruh users secara realtime
-    const unsubUsers = onSnapshot(collection(db, 'users'), (usersSnapshot) => {
-      const usersList = usersSnapshot.docs.map(doc => ({
-        uid: doc.id,
-        name: doc.data().name || 'Unknown User',
-      }));
+    let usersList = [];
+    let completions = [];
 
-      // 2. Dengarkan data pengumpulan tugas secara realtime
-      // (Ganti 'taskCompletions' sesuai nama koleksi tempat siswa submit tugas)
-      const unsubCompletions = onSnapshot(collection(db, 'taskCompletions'), (completionsSnapshot) => {
-        const completions = completionsSnapshot.docs.map(doc => doc.data());
+    const computeChartData = () => {
+      const aggregatedData = usersList.map((user) => {
+        const totalSelesai = completions.filter(
+          (comp) => comp.userId === user.id || comp.senderId === user.id,
+        ).length;
 
-        // 3. Hitung total tugas per user (Aggregasi Data)
-        const aggregatedData = usersList.map(user => {
-          // Cari berapa banyak dokumen di taskCompletions yang userId-nya cocok
-          const totalSelesai = completions.filter(comp => comp.userId === user.uid || comp.senderId === user.uid).length;
-          
-          return {
-            // Potong nama agar tidak kepanjangan di sumbu X grafik
-            name: user.name.length > 10 ? user.name.substring(0, 8) + '..' : user.name,
-            fullName: user.name,
-            jumlahTugas: totalSelesai
-          };
-        });
-
-        // 4. Urutkan dari yang paling banyak mengumpulkan dan ambil 8 besar
-        const top8Users = aggregatedData
-          .sort((a, b) => b.jumlahTugas - a.jumlahTugas)
-          .slice(0, 8);
-
-        setChartData(top8Users);
-        setLoading(false);
+        return {
+          name: user.name?.length > 10 ? `${user.name.substring(0, 8)}..` : user.name || 'Unknown',
+          fullName: user.name || 'Unknown User',
+          jumlahTugas: totalSelesai,
+        };
       });
 
-      return () => unsubCompletions();
+      const top8Users = aggregatedData
+        .sort((a, b) => b.jumlahTugas - a.jumlahTugas)
+        .slice(0, 8);
+
+      setChartData(top8Users);
+      setLoading(false);
+    };
+
+    const unsubUsers = userService.subscribeUsers((users) => {
+      usersList = users;
+      computeChartData();
     });
 
-    return () => unsubUsers();
+    const unsubCompletions = taskService.subscribeAllTaskCompletions((data) => {
+      completions = data;
+      computeChartData();
+    });
+
+    return () => {
+      unsubUsers();
+      unsubCompletions();
+    };
   }, []);
 
   // Custom Tooltip Pop-up saat batang di-hover kursor
@@ -70,7 +69,7 @@ export default function UserTaskAnalytics() {
     return (
       <div className="w-full h-96 bg-white border border-slate-200/80 rounded-2xl flex flex-col items-center justify-center gap-2">
         <Loader2 className="text-indigo-500 animate-spin" size={24} />
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Menghitung Data Firestore...</span>
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Memuat Data...</span>
       </div>
     );
   }
@@ -98,31 +97,31 @@ export default function UserTaskAnalytics() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              layout="horizontal" // Batang dipastikan tegak berdiri ke atas
+              layout="horizontal"
               margin={{ top: 10, right: 5, left: -25, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
+
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
                 tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
               />
-              
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
+
+              <YAxis
+                axisLine={false}
+                tickLine={false}
                 tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
                 allowDecimals={false}
               />
-              
+
               <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-              
-              <Bar 
-                dataKey="jumlahTugas" 
-                fill="url(#taskGradasi)" 
-                radius={[6, 6, 0, 0]} // Membuat pucuk batang melengkung bulat
+
+              <Bar
+                dataKey="jumlahTugas"
+                fill="url(#taskGradasi)"
+                radius={[6, 6, 0, 0]}
                 maxBarSize={30}
               />
 

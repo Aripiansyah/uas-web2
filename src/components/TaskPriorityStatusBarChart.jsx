@@ -11,25 +11,21 @@ import {
 } from "recharts";
 
 const COLORS = {
-  completed: "#10b981", // emerald
-  pending: "#8b5cf6", // purple
+  completed: "#10b981",
+  pending: "#8b5cf6",
 };
 
 function getTaskPriority(task) {
-  // In your user tasks, priority is "High" | "Medium" | "Low"
   return task?.priority || "Medium";
 }
 
 function isTaskCompleted(task, completedTaskIds) {
   const taskKey = task?.id ?? task?.taskId;
 
-  // Prefer explicit per-user completion ids
   if (Array.isArray(completedTaskIds)) {
     if (!taskKey) return false;
     return completedTaskIds.includes(taskKey);
   }
-
-  // Fallback to legacy/global status fields
   if (typeof task?.status === "string") return task.status === "Selesai";
   if (task?.isCompleted === true) return true;
 

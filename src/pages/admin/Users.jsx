@@ -4,7 +4,7 @@ import {
   Trash2, Edit3, Loader2, Key, Eye, EyeOff, 
   Filter, AlertTriangle, UserCheck, UserX, IdCard
 } from 'lucide-react';
-import { userService } from '../../services/firebase';
+import { userService } from '../../services/api';
 
 export default function Users() {
   // --- STATE MANAGEMENT ---
@@ -124,7 +124,7 @@ export default function Users() {
       setIsModalOpen(false);
     } catch (error) {
       console.error(error);
-      showToast('Gagal memproses data ke Firebase.', 'error');
+      showToast('Gagal memproses data. Periksa koneksi server.', 'error');
     } finally {
       setSubmitting(false);
     }

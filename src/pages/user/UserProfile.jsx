@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Star, Award, BarChart2, Shield, Mail, ChevronRight, Camera, Key } from 'lucide-react';
-import { db, quizService } from '../../services/firebase';
-import { doc, onSnapshot, collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { quizService, userService } from '../../services/api';
 
 export default function UserProfile() {
   const [userData, setUserData] = useState(null);
@@ -12,35 +11,34 @@ export default function UserProfile() {
   const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.uid) return;
 
-    // 1. Ambil data profil real-time dari Firestore
-    const userRef = doc(db, 'users', currentUser.uid);
-    const unsubUser = onSnapshot(userRef, async (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
+    const unsubUser = userService.subscribeUserById(currentUser.uid, async (data) => {
+      if (data) {
         setUserData(data);
+      }
 
-        // 2. Ambil riwayat kuis untuk kalkulasi rata-rata nilai kuis
-        const history = await quizService.getUserQuizCompletions(currentUser.uid);
-        if (history.length > 0) {
-          const total = history.reduce((acc, curr) => acc + (curr.score || 0), 0);
-          setAverageScore(Math.round(total / history.length));
-        } else {
-          // Setelah reset, history kosong => rata-rata harus kembali 0
-          setAverageScore(0);
-        }
+      const history = await quizService.getUserQuizCompletions(currentUser.uid);
+      if (history.length > 0) {
+        const total = history.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        setAverageScore(Math.round(total / history.length));
+      } else {
+        setAverageScore(0);
       }
     });
 
-    // 3. Ambil posisi peringkat global dari seluruh koleksi users (realtime)
-    const rankQuery = query(collection(db, 'users'), orderBy('totalPoints', 'desc'));
-    const unsubRank = onSnapshot(rankQuery, (snapshot) => {
-      const index = snapshot.docs.findIndex(d => d.id === currentUser.uid);
+    const unsubRank = userService.subscribeUsers((users) => {
+      const sortedUsers = [...users].sort((a, b) => 
+        (b.total_points || b.totalPoints || 0) - (a.total_points || a.totalPoints || 0)
+      );
+      const index = sortedUsers.findIndex((user) => (user.id || user.uid) === currentUser.uid);
       if (index !== -1) setRanking(index + 1);
     });
 
-    return () => { unsubUser(); unsubRank(); };
+    return () => {
+      unsubUser();
+      unsubRank();
+    };
   }, []);
 
   if (!userData) {
@@ -77,8 +75,8 @@ export default function UserProfile() {
 
       {/* Real-time Gamification Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <MiniStats label="Total Poin" value={userData.totalPoints || 0} icon={Trophy} gradient="from-amber-400 to-orange-500" />
-        <MiniStats label="Quiz Selesai" value={userData.quizzesCompleted || 0} icon={Award} gradient="from-indigo-500 to-violet-600" />
+        <MiniStats label="Total Poin" value={userData.total_points || userData.totalPoints || 0} icon={Trophy} gradient="from-amber-400 to-orange-500" />
+        <MiniStats label="Quiz Selesai" value={userData.quizzes_completed || userData.quizzesCompleted || 0} icon={Award} gradient="from-indigo-500 to-violet-600" />
         <MiniStats label="Rata-Rata Nilai" value={`${averageScore}/100`} icon={Star} gradient="from-emerald-400 to-teal-500" />
         <MiniStats label="Peringkat Global" value={`#${ranking}`} icon={BarChart2} gradient="from-rose-500 to-pink-500" />
       </div>

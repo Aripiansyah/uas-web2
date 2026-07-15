@@ -4,7 +4,7 @@ import {
   Trash2, Edit3, CheckCircle, SlidersHorizontal, Loader2, 
   FileText, Check, ChevronDown, Folder, UserCheck
 } from 'lucide-react';
-import { taskService, userService } from '../../services/firebase';
+import { taskService, userService } from '../../services/api';
 import Loading from '../../components/Loading';
 
 // Daftar Dosen Tetap sesuai Request

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, RotateCcw, AlertCircle, Loader2 } from 'lucide-react';
-import { userService, quizService } from '../../services/firebase';
+import { userService, quizService } from '../../services/api';
 import Toast from '../../components/Toast';
 
 export default function AdminLeaderboard() {
@@ -27,8 +27,10 @@ export default function AdminLeaderboard() {
         })
       );
 
-      // Sort by total points (descending)
-      const sortedUsers = usersWithStats.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+      // Sort by total points (descending) — support both camelCase and snake_case
+      const sortedUsers = usersWithStats.sort((a, b) =>
+        (b.total_points || b.totalPoints || 0) - (a.total_points || a.totalPoints || 0)
+      );
       
       setUsers(sortedUsers);
       setLoading(false);

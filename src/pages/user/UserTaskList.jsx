@@ -4,7 +4,7 @@ import {
   CheckCircle, SlidersHorizontal, Loader2,
   Clock, Zap, Flag, TrendingUp, Check
 } from 'lucide-react';
-import { taskService, userService } from '../../services/firebase';
+import { taskService, userService } from '../../services/api';
 import Loading from '../../components/Loading';
 
 export default function UserTaskList() {
@@ -72,19 +72,22 @@ export default function UserTaskList() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // --- SUBSCRIBE PER-USER COMPLETIONS (FIX: completion must be per user, not global) ---
+  // --- SUBSCRIBE PER-USER COMPLETIONS ---
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    // Resolve userId dari field uid atau id (tergantung schema localStorage)
+    const userId = currentUser?.uid || currentUser?.id;
+    if (!userId) return;
 
     const unsubscribe = taskService.subscribeUserTaskCompletions(
-      currentUser.uid,
+      userId,
       (ids) => {
+        // Backend mengembalikan array string task_id langsung
         setCompletedTaskIds(Array.isArray(ids) ? ids : []);
       }
     );
 
     return () => unsubscribe?.();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, currentUser?.id]);
 
   // --- HELPER FUNCTIONS ---
   const formatDeadlineWithTime = (deadlineStr) => {
@@ -151,8 +154,14 @@ export default function UserTaskList() {
 
   // --- COMPLETE TASK HANDLER ---
   const handleCompleteTask = async (taskId) => {
+    // Resolve userId dari uid atau id
+    const userId = currentUser?.uid || currentUser?.id;
     try {
-      if (!currentUser?.uid) return;
+      if (!userId) {
+        console.error('[handleCompleteTask] userId tidak tersedia:', currentUser);
+        setNetworkError('Sesi tidak valid. Silakan login ulang.');
+        return;
+      }
 
       setNetworkError(null);
 
@@ -165,7 +174,14 @@ export default function UserTaskList() {
       setCrudBusy(true);
       setLoadingTaskId(taskId);
 
-      await taskService.saveUserTaskCompletion(currentUser.uid, taskId);
+      const completed = await taskService.saveUserTaskCompletion(userId, taskId);
+
+      // Update local state optimistically agar UI langsung berubah
+      setCompletedTaskIds((prev) =>
+        completed
+          ? [...prev, taskId]
+          : prev.filter((id) => id !== taskId)
+      );
 
       setLoadingTaskId(null);
       setCrudBusy(false);
